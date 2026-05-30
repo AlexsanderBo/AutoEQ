@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>WoburnAutoEQ</AssemblyName>
+    <RootNamespace>WoburnAutoEQ</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="_validation_obj\**\*.cs" />
+    <Page Remove="_validation_obj\**\*.xaml" />
+    <ApplicationDefinition Remove="_validation_obj\**\*.xaml" />
+    <None Remove="_validation_obj\**\*" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+</Project>
