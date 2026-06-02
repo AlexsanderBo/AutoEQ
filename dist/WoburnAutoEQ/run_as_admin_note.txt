@@ -1,7 +1,0 @@
-Run WoburnAutoEQ.exe as Administrator the first time so it can add:
-Include: woburn_autoeq.txt
-
-to:
-C:\Program Files\EqualizerAPO\config\config.txt
-
-After that, normal user mode should be enough for monitoring.

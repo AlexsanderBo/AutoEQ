@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>AutoEQ</AssemblyName>
+    <RootNamespace>AutoEQ</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="_validation_obj\**\*.cs" />
+    <Compile Remove="_smooth_validation_obj\**\*.cs" />
+    <Compile Remove="_ui_validation_obj\**\*.cs" />
+    <Compile Remove="_volume_validation_obj\**\*.cs" />
+    <Page Remove="_validation_obj\**\*.xaml" />
+    <Page Remove="_smooth_validation_obj\**\*.xaml" />
+    <Page Remove="_ui_validation_obj\**\*.xaml" />
+    <Page Remove="_volume_validation_obj\**\*.xaml" />
+    <ApplicationDefinition Remove="_validation_obj\**\*.xaml" />
+    <ApplicationDefinition Remove="_smooth_validation_obj\**\*.xaml" />
+    <ApplicationDefinition Remove="_ui_validation_obj\**\*.xaml" />
+    <ApplicationDefinition Remove="_volume_validation_obj\**\*.xaml" />
+    <None Remove="_validation_obj\**\*" />
+    <None Remove="_smooth_validation_obj\**\*" />
+    <None Remove="_ui_validation_obj\**\*" />
+    <None Remove="_volume_validation_obj\**\*" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\native\wasapi_autoeq\wasapi_autoeq.exe" Link="wasapi_autoeq.exe" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
