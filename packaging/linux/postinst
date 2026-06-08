@@ -55,11 +55,9 @@ cat <<'EOF'
 AutoEQ Linux installed.
 
 To finish setup, run:
-  autoeq-linux --install-pipewire --install-startup --setup-only
-  systemctl --user restart pipewire pipewire-pulse
+  /usr/share/autoeq-linux/install_ubuntu.sh
 
 Then open Ubuntu sound settings and select "AutoEQ Sink".
-
 Or launch "AutoEQ Linux" from the app menu.
 EOF
 

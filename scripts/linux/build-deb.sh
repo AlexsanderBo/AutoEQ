@@ -24,7 +24,7 @@ PKG_ROOT="$REPO_ROOT/build/linux/deb/autoeq-linux_${VERSION}_amd64"
 DIST_DIR="$REPO_ROOT/dist/linux"
 
 rm -rf "$PUBLISH_DIR" "$PKG_ROOT"
-mkdir -p "$PUBLISH_DIR" "$PKG_ROOT/DEBIAN" "$PKG_ROOT/usr/bin" "$PKG_ROOT/usr/share/doc/autoeq-linux" "$PKG_ROOT/usr/share/autoeq-linux" "$PKG_ROOT/usr/share/applications" "$DIST_DIR"
+mkdir -p "$PUBLISH_DIR" "$PKG_ROOT/DEBIAN" "$PKG_ROOT/usr/bin" "$PKG_ROOT/usr/share/doc/autoeq-linux" "$PKG_ROOT/usr/share/autoeq-linux" "$PKG_ROOT/usr/share/applications" "$PKG_ROOT/usr/share/icons/hicolor/scalable/apps" "$DIST_DIR"
 
 dotnet publish "$REPO_ROOT/AutoEQ.Linux/AutoEQ.Linux.csproj" \
   -c Release \
@@ -37,6 +37,7 @@ install -m 0755 "$PUBLISH_DIR/autoeq-linux" "$PKG_ROOT/usr/bin/autoeq-linux"
 install -m 0755 "$REPO_ROOT/AutoEQ.Linux/install_ubuntu.sh" "$PKG_ROOT/usr/share/autoeq-linux/install_ubuntu.sh"
 install -m 0644 "$REPO_ROOT/README.md" "$PKG_ROOT/usr/share/doc/autoeq-linux/README.md"
 install -m 0644 "$REPO_ROOT/packaging/linux/autoeq-linux.desktop" "$PKG_ROOT/usr/share/applications/autoeq-linux.desktop"
+install -m 0644 "$REPO_ROOT/docs/autoeq-logo.svg" "$PKG_ROOT/usr/share/icons/hicolor/scalable/apps/autoeq-linux.svg"
 
 sed "s/@VERSION@/$VERSION/g" "$REPO_ROOT/packaging/linux/control.template" > "$PKG_ROOT/DEBIAN/control"
 install -m 0755 "$REPO_ROOT/packaging/linux/postinst" "$PKG_ROOT/DEBIAN/postinst"

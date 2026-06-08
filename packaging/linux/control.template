@@ -3,9 +3,9 @@ Version: @VERSION@
 Section: sound
 Priority: optional
 Architecture: amd64
-Maintainer: AutoEQ <maintainer@example.com>
+Maintainer: AlexsanderBo <alexsanderbo@users.noreply.github.com>
 Depends: pulseaudio-utils, pipewire, pipewire-pulse
-Homepage: https://example.com/autoeq
+Homepage: https://github.com/AlexsanderBo/AutoEQ
 Description: AutoEQ Linux PipeWire runner
  AutoEQ Linux is a headless runner for Ubuntu/PipeWire. It captures the
  default output monitor, analyzes audio locally, and writes a PipeWire
