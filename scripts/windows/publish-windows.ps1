@@ -37,6 +37,10 @@ if ($SingleFile) {
 dotnet @publishArgs
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Copy-Item -Force (Join-Path $repoRoot "README.md") (Join-Path $OutputDir "README.md")
+$icoSrc = Join-Path $repoRoot "packaging\windows\AutoEQ.ico"
+if (Test-Path $icoSrc) {
+    Copy-Item -Force $icoSrc (Join-Path $OutputDir "AutoEQ.ico")
+}
 
 $note = @"
 Run AutoEQ.exe as Administrator the first time so it can add:

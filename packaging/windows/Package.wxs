@@ -11,15 +11,25 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of AutoEQ is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
-    <!-- UI: standard wizard with install-folder page -->
-    <ui:WixUI Id="WixUI_InstallDir" />
-    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <!-- App icon shown in Add/Remove Programs -->
+    <Icon Id="AppIcon" SourceFile="$(var.PublishDir)AutoEQ.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/AlexsanderBo/AutoEQ" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/AlexsanderBo/AutoEQ" />
+    <Property Id="ARPCOMMENTS" Value="Real-time audio EQ powered by EqualizerAPO" />
 
-    <!-- Install folder (user-selectable via wizard) -->
+    <!-- UI: feature tree shows optional Desktop/Startup checkboxes -->
+    <ui:WixUI Id="WixUI_FeatureTree" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+
+    <!-- Install folder -->
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="AutoEQ">
         <Component Id="MainExecutable" Guid="{61D3B108-D188-4D1F-BB0E-BB2447825E82}" Bitness="always64">
           <File Id="AutoEQExe" Source="$(var.PublishDir)AutoEQ.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="AppIconFile" Guid="{9F2E3A1B-7C4D-5E6F-8A9B-0C1D2E3F4A5B}" Bitness="always64">
+          <File Id="AppIconIco" Source="$(var.PublishDir)AutoEQ.ico" />
         </Component>
         <Component Id="ReadmeFile" Guid="{63F1D19D-92D8-469E-80FE-F10E43C197D1}" Bitness="always64">
           <File Id="ReadmeMd" Source="$(var.PublishDir)README.md" />
@@ -37,53 +47,58 @@
           <Shortcut
             Id="AutoEQStartMenuShortcut"
             Name="AutoEQ"
-            Description="AutoEQ"
+            Description="Real-time audio equalizer"
             Target="[INSTALLFOLDER]AutoEQ.exe"
-            WorkingDirectory="INSTALLFOLDER" />
+            WorkingDirectory="INSTALLFOLDER"
+            Icon="AppIcon"
+            IconIndex="0" />
           <RemoveFolder Id="RemoveApplicationProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
           <RegistryValue Root="HKCU" Key="Software\AutoEQ" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
         </Component>
       </Directory>
     </StandardDirectory>
 
-    <!-- Desktop shortcut (optional, controlled by feature) -->
+    <!-- Desktop shortcut (optional) -->
     <StandardDirectory Id="DesktopFolder">
       <Component Id="DesktopShortcut" Guid="{A2C1D3E4-F5B6-7890-ABCD-EF1234567890}">
         <Shortcut
           Id="AutoEQDesktopShortcut"
           Name="AutoEQ"
-          Description="AutoEQ"
+          Description="Real-time audio equalizer"
           Target="[INSTALLFOLDER]AutoEQ.exe"
-          WorkingDirectory="INSTALLFOLDER" />
+          WorkingDirectory="INSTALLFOLDER"
+          Icon="AppIcon"
+          IconIndex="0" />
         <RemoveFolder Id="RemoveDesktopFolder" Directory="DesktopFolder" On="uninstall" />
         <RegistryValue Root="HKCU" Key="Software\AutoEQ" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </StandardDirectory>
 
-    <!-- Windows startup (optional, controlled by feature) -->
+    <!-- Windows startup (optional) -->
     <Component Id="StartupRegistry" Guid="{B3D2E4F5-A6B7-8901-BCDE-F12345678901}" Directory="INSTALLFOLDER">
       <RegistryValue
         Root="HKCU"
         Key="Software\Microsoft\Windows\CurrentVersion\Run"
         Name="AutoEQ"
         Type="string"
-        Value="[INSTALLFOLDER]AutoEQ.exe"
+        Value="&quot;[INSTALLFOLDER]AutoEQ.exe&quot; --background"
         KeyPath="yes" />
     </Component>
 
-    <Feature Id="MainFeature" Title="AutoEQ" Level="1">
+    <Feature Id="MainFeature" Title="AutoEQ" Level="1" AllowAdvertise="no" Display="expand">
       <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="AppIconFile" />
       <ComponentRef Id="ReadmeFile" />
       <ComponentRef Id="AdminNoteFile" />
       <ComponentRef Id="StartMenuShortcut" />
-    </Feature>
 
-    <Feature Id="DesktopShortcutFeature" Title="Desktop Shortcut" Description="Add a shortcut on the Desktop" Level="1">
-      <ComponentRef Id="DesktopShortcut" />
-    </Feature>
+      <Feature Id="DesktopShortcutFeature" Title="Desktop Shortcut" Description="Add a shortcut on the Desktop" Level="1" AllowAdvertise="no">
+        <ComponentRef Id="DesktopShortcut" />
+      </Feature>
 
-    <Feature Id="StartupFeature" Title="Start with Windows" Description="Launch AutoEQ automatically when Windows starts" Level="1">
-      <ComponentRef Id="StartupRegistry" />
+      <Feature Id="StartupFeature" Title="Start with Windows" Description="Launch AutoEQ automatically when Windows starts" Level="1" AllowAdvertise="no">
+        <ComponentRef Id="StartupRegistry" />
+      </Feature>
     </Feature>
 
   </Package>

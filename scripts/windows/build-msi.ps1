@@ -27,12 +27,14 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $wixProj = Join-Path $repoRoot "packaging\windows\AutoEQ.Installer.wixproj"
 $publishDirForWix = (Resolve-Path $publishDir).Path.TrimEnd('\') + '\'
 $distDirForMsBuild = (Resolve-Path $distDir).Path.TrimEnd('\') + '\'
+$licenseRtf = (Resolve-Path (Join-Path $repoRoot "packaging\windows\license.rtf")).Path
 
 dotnet build $wixProj `
     -c $Configuration `
     /p:PublishDir="$publishDirForWix" `
     /p:ProductVersion="$Version" `
     /p:Publisher="$Publisher" `
+    /p:LicenseRtf="$licenseRtf" `
     /p:OutputPath="$distDirForMsBuild"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

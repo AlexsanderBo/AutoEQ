@@ -6,7 +6,8 @@
     <DefineConstants>
       PublishDir=$(PublishDir);
       ProductVersion=$(ProductVersion);
-      Publisher=$(Publisher)
+      Publisher=$(Publisher);
+      LicenseRtf=$(LicenseRtf)
     </DefineConstants>
   </PropertyGroup>
   <ItemGroup>

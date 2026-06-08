@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>AutoEQ</AssemblyName>
     <RootNamespace>AutoEQ</RootNamespace>
+    <ApplicationIcon>..\packaging\windows\AutoEQ.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.2.5" />
