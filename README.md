@@ -11,8 +11,8 @@
 
 <br/>
 
-> **AutoEQ** là equalizer hệ thống chạy hoàn toàn local — không cloud, không upload, không telemetry.  
-> Âm thanh warm, vocal-forward, tối ưu cho nghe nhạc dài và podcast.
+> **AutoEQ** is a system-wide equalizer that runs entirely on your machine — no cloud, no uploads, no telemetry.  
+> Warm, vocal-forward sound tuned for long listening sessions and podcasts.
 
 ---
 
@@ -20,9 +20,9 @@
 
 <div align="center">
 
-| 🖥️ Platform | 📦 Installer | ✅ Yêu cầu |
+| 🖥️ Platform | 📦 Installer | ✅ Requirements |
 |:---:|:---:|:---|
-| **Windows 10 / 11** | [**⬇ AutoEQ-0.1.0-win-x64.msi**](https://github.com/AlexsanderBo/AutoEQ/releases/latest/download/AutoEQ-0.1.0-win-x64.msi) | [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) phải được cài trước |
+| **Windows 10 / 11** | [**⬇ AutoEQ-0.1.0-win-x64.msi**](https://github.com/AlexsanderBo/AutoEQ/releases/latest/download/AutoEQ-0.1.0-win-x64.msi) | [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) must be installed first |
 | **Ubuntu / Debian** | [**⬇ autoeq-linux_0.1.0_amd64.deb**](https://github.com/AlexsanderBo/AutoEQ/releases/latest) | `pulseaudio-utils` · `pipewire` · `pipewire-pulse` |
 
 </div>
@@ -34,23 +34,23 @@
 <table>
 <tr>
 <td width="48px" align="center">1️⃣</td>
-<td>Cài <a href="https://sourceforge.net/projects/equalizerapo/"><strong>Equalizer APO</strong></a> — bắt buộc, là driver hook âm thanh hệ thống. Khởi động lại máy sau khi cài.</td>
+<td>Install <a href="https://sourceforge.net/projects/equalizerapo/"><strong>Equalizer APO</strong></a> — required; it hooks into the Windows audio pipeline. Reboot after installing.</td>
 </tr>
 <tr>
 <td align="center">2️⃣</td>
-<td>Chạy <code>AutoEQ-0.1.0-win-x64.msi</code> → Next → Install.</td>
+<td>Run <code>AutoEQ-0.1.0-win-x64.msi</code> → Next → Install.</td>
 </tr>
 <tr>
 <td align="center">3️⃣</td>
-<td>Mở <strong>AutoEQ</strong> từ Start Menu.</td>
+<td>Open <strong>AutoEQ</strong> from the Start Menu.</td>
 </tr>
 <tr>
 <td align="center">4️⃣</td>
-<td>Lần đầu chạy: <strong>Run as Administrator</strong> một lần để AutoEQ đăng ký với Equalizer APO. Những lần sau không cần.</td>
+<td>First launch: <strong>Run as Administrator</strong> once so AutoEQ can register with Equalizer APO. Normal user mode is fine after that.</td>
 </tr>
 </table>
 
-**Gỡ cài đặt:**  
+**Uninstall:**  
 `Settings → Apps → Installed apps → AutoEQ → Uninstall`
 
 ---
@@ -58,65 +58,65 @@
 ## 🐧 Linux Setup
 
 ```bash
-# 1. Cài dependencies
+# 1. Install dependencies
 sudo apt install pulseaudio-utils pipewire pipewire-pulse
 
-# 2. Cài package
+# 2. Install the package
 sudo dpkg -i autoeq-linux_0.1.0_amd64.deb
 
-# 3. Khởi tạo (chạy một lần)
+# 3. Initialize (run once)
 autoeq-linux --install-pipewire --install-startup --setup-only
 
 # 4. Restart audio services
 systemctl --user restart pipewire pipewire-pulse
 ```
 
-Sau đó vào **Settings → Sound → Output** và chọn **AutoEQ Sink**.
+Then go to **Settings → Sound → Output** and select **AutoEQ Sink**.
 
-> **Gỡ cài đặt:** `sudo apt remove autoeq-linux`  
-> Config cá nhân tại `~/.config/autoeq/` được giữ lại.
+> **Uninstall:** `sudo apt remove autoeq-linux`  
+> Personal config at `~/.config/autoeq/` is preserved on uninstall.
 
 ---
 
 ## 🎛️ Presets
 
-Mỗi preset là một đường EQ được tinh chỉnh thủ công cho một use case cụ thể:
+Each preset is a hand-tuned EQ curve for a specific use case:
 
 <div align="center">
 
-| Preset | 🎵 Âm sắc | Dùng khi |
+| Preset | 🎵 Sound | Best for |
 |:---:|:---|:---|
-| **Reference** | AutoEQ signature curve | Nghe nhạc hằng ngày, mix kiểm tra |
-| **Cozy** | Warm, balanced | Nhạc acoustic, jazz, lo-fi |
-| **Corner** | Bass cut | Loa đặt ở góc tường bị bùng bass |
-| **Tight** | Bass gọn, nhanh | EDM, hip-hop cần punch rõ |
-| **Podcast** | Mid forward, vocal rõ | Podcast, audiobook, meeting |
-| **Silk** | Treble giảm | Nghe lâu không mỏi tai |
-| **Midnight** | Smooth ở âm lượng thấp | Nghe khuya, không muốn ồn |
-| **Flat** | Không EQ | So sánh, test, căn chỉnh |
+| **Reference** | AutoEQ signature curve | Everyday listening, mix checking |
+| **Cozy** | Warm, balanced | Acoustic, jazz, lo-fi |
+| **Corner** | Bass cut | Speakers placed in a corner (bass buildup) |
+| **Tight** | Punchy, fast bass | EDM, hip-hop |
+| **Podcast** | Forward mids, clear vocals | Podcasts, audiobooks, calls |
+| **Silk** | Reduced treble | Long sessions, ear fatigue |
+| **Midnight** | Smooth at low volume | Late-night listening |
+| **Flat** | No EQ | A/B testing, calibration |
 
 </div>
 
 ---
 
-## ✨ Tính năng
+## ✨ Features
 
 <div align="center">
 
-|  | Tính năng | Mô tả |
+|  | Feature | Details |
 |:---:|:---|:---|
-| 🔒 | **Hoàn toàn local** | Zero network — không ping, không telemetry, không cloud |
-| ⚡ | **Real-time** | Latency < 10ms, xử lý toàn hệ thống |
-| 🎨 | **8 presets** | Tinh chỉnh thủ công cho từng use case |
-| 🖥️ | **Cross-platform** | Windows 10/11 + Ubuntu/Debian |
-| 🪶 | **Nhẹ** | ~30 MB RAM, <1% CPU khi idle |
-| 🔁 | **Auto-start** | Chạy cùng hệ thống, không cần mở tay |
+| 🔒 | **Fully local** | Zero network — no pings, no telemetry, no cloud |
+| ⚡ | **Real-time** | < 10 ms latency, system-wide processing |
+| 🎨 | **8 presets** | Hand-tuned for distinct use cases |
+| 🖥️ | **Cross-platform** | Windows 10/11 + Ubuntu / Debian |
+| 🪶 | **Lightweight** | ~30 MB RAM, < 1% CPU at idle |
+| 🔁 | **Auto-start** | Runs at login, no manual launch needed |
 
 </div>
 
 ---
 
-## 🏗️ Cách hoạt động
+## 🏗️ How it works
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -135,9 +135,9 @@ Mỗi preset là một đường EQ được tinh chỉnh thủ công cho một 
                                  └───────────────────┘
 ```
 
-**Windows:** AutoEQ viết config cho [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) — driver hook vào audio pipeline của Windows.
+**Windows:** AutoEQ writes config for [Equalizer APO](https://sourceforge.net/projects/equalizerapo/), which hooks directly into the Windows audio pipeline.
 
-**Linux:** AutoEQ tạo PipeWire filter-chain node, hoạt động như một virtual sink mà mọi app đều route qua.
+**Linux:** AutoEQ creates a PipeWire filter-chain node acting as a virtual sink — all apps route audio through it automatically.
 
 ---
 
