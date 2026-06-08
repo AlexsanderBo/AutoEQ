@@ -1,0 +1,12 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <OutputName>AutoEQ-$(ProductVersion)-win-x64</OutputName>
+    <DefineConstants>
+      PublishDir=$(PublishDir);
+      ProductVersion=$(ProductVersion);
+      Publisher=$(Publisher)
+    </DefineConstants>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=AutoEQ Linux
+Comment=Run AutoEQ Linux background analyzer
+Exec=/usr/bin/autoeq-linux --background
+Terminal=false
+Categories=Audio;AudioVideo;

@@ -8,6 +8,8 @@ public interface IOutputProfileStore
 {
     OutputAudioProfile GetOrCreate(AudioOutputInfo info, bool nearWallMode, bool nightMode);
     IReadOnlyList<OutputAudioProfile> GetAll();
+    OutputAudioProfile ApplyCalibration(string deviceId, double bass, double warmth, double vocal, double bright, double[] measuredAverage, int sampleCount);
+    OutputAudioProfile ResetCalibration(AudioOutputInfo info, bool nearWallMode, bool nightMode);
 }
 
 public sealed class OutputAudioProfileStore : IOutputProfileStore
@@ -57,6 +59,37 @@ public sealed class OutputAudioProfileStore : IOutputProfileStore
         {
             EnsureLoaded();
             return _profiles.Values.OrderBy(p => p.Name).ToArray();
+        }
+    }
+
+    public OutputAudioProfile ApplyCalibration(string deviceId, double bass, double warmth, double vocal, double bright, double[] measuredAverage, int sampleCount)
+    {
+        lock (_gate)
+        {
+            EnsureLoaded();
+            string key = string.IsNullOrWhiteSpace(deviceId) ? "global" : deviceId.Trim();
+            if (!_profiles.TryGetValue(key, out OutputAudioProfile? existing))
+            {
+                existing = new OutputAudioProfile { DeviceId = key, Name = key };
+            }
+
+            OutputAudioProfile calibrated = CopyWithCalibration(existing, bass, warmth, vocal, bright, measuredAverage, sampleCount);
+            _profiles[key] = calibrated;
+            Save();
+            return calibrated;
+        }
+    }
+
+    public OutputAudioProfile ResetCalibration(AudioOutputInfo info, bool nearWallMode, bool nightMode)
+    {
+        lock (_gate)
+        {
+            EnsureLoaded();
+            string key = MakeKey(info.DefaultDeviceId, info.DefaultDeviceName);
+            OutputAudioProfile inferred = InferProfile(info, nearWallMode, nightMode);
+            _profiles[key] = inferred;
+            Save();
+            return inferred;
         }
     }
 
@@ -131,6 +164,33 @@ public sealed class OutputAudioProfileStore : IOutputProfileStore
         MaxCutDb = existing.MaxCutDb,
         BassSafetyCutDb = existing.BassSafetyCutDb,
         PreferSpeakerVoicing = existing.PreferSpeakerVoicing,
+        IsCalibrated = existing.IsCalibrated,
+        CalibratedUtc = existing.CalibratedUtc,
+        CalibrationSampleCount = existing.CalibrationSampleCount,
+        MeasuredBandAverage = existing.MeasuredBandAverage,
+        LastSeenUtc = DateTime.UtcNow
+    };
+
+    private static OutputAudioProfile CopyWithCalibration(OutputAudioProfile existing, double bass, double warmth, double vocal, double bright, double[] measuredAverage, int sampleCount) => new()
+    {
+        DeviceId = existing.DeviceId,
+        Name = existing.Name,
+        DeviceType = existing.DeviceType,
+        SoundCardName = existing.SoundCardName,
+        MainboardName = existing.MainboardName,
+        Reason = existing.Reason,
+        TargetBass = Clamp01(bass),
+        TargetWarmth = Clamp01(warmth),
+        TargetVocal = Clamp01(vocal),
+        TargetBright = Clamp01(bright),
+        MaxBoostDb = existing.MaxBoostDb,
+        MaxCutDb = existing.MaxCutDb,
+        BassSafetyCutDb = existing.BassSafetyCutDb,
+        PreferSpeakerVoicing = existing.PreferSpeakerVoicing,
+        IsCalibrated = true,
+        CalibratedUtc = DateTime.UtcNow,
+        CalibrationSampleCount = Math.Max(0, sampleCount),
+        MeasuredBandAverage = measuredAverage.ToArray(),
         LastSeenUtc = DateTime.UtcNow
     };
 
@@ -187,6 +247,7 @@ public sealed class OutputAudioProfileStore : IOutputProfileStore
     }
 
     private static bool ContainsAny(string value, params string[] terms) => terms.Any(term => value.Contains(term, StringComparison.OrdinalIgnoreCase));
+    private static double Clamp01(double value) => double.IsFinite(value) ? Math.Clamp(value, 0.02, 0.80) : 0.20;
     private static string MakeKey(string id, string name) => string.IsNullOrWhiteSpace(id) ? name : id;
     private sealed class ProfileFile { public IReadOnlyList<OutputAudioProfile> Profiles { get; init; } = []; }
 }

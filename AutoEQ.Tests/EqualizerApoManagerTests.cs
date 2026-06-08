@@ -15,13 +15,15 @@ public sealed class EqualizerApoManagerTests : IDisposable
     private readonly string _tempDir;
     private readonly AutoEqConfig _config;
     private readonly EqualizerApoManager _manager;
+    private readonly DeviceEqStore _store;
 
     public EqualizerApoManagerTests()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), "autoeq_test_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);
         _config = new AutoEqConfig(_tempDir);
-        _manager = new EqualizerApoManager(_config);
+        _store = new DeviceEqStore(Path.Combine(_tempDir, "device-eq.json"));
+        _manager = new EqualizerApoManager(_config, _store);
     }
 
     public void Dispose()
@@ -77,7 +79,7 @@ public sealed class EqualizerApoManagerTests : IDisposable
     }
 
     [Fact]
-    public async Task WriteAutoEQConfigAsync_LimiterGuard_AddsHeadroom_WhenTruePeakHot()
+    public async Task WriteAutoEQConfigAsync_DoesNotChangePreamp_WhenTruePeakHot()
     {
         var preset = new EqPreset
         {
@@ -90,9 +92,9 @@ public sealed class EqualizerApoManagerTests : IDisposable
         await _manager.WriteAutoEQConfigAsync(preset.EqualizerApoText, preset);
 
         string body = await File.ReadAllTextAsync(_config.AutoEqEqFile);
-        Assert.Contains("Safety limiter guard", body);
+        Assert.DoesNotContain("Safety limiter guard", body);
         Assert.Equal(1, body.Split("Preamp:").Length - 1);
-        Assert.Contains("Preamp: -1.5 dB", body);
+        Assert.Contains("Preamp: 0.0 dB", body);
     }
 
     [Fact]
@@ -117,5 +119,75 @@ public sealed class EqualizerApoManagerTests : IDisposable
 
         await Assert.ThrowsAsync<DirectoryNotFoundException>(
             () => manager.WriteAutoEQConfigAsync("Preamp: -3.0 dB"));
+    }
+
+    [Fact]
+    public async Task WriteDeviceScopedConfigAsync_AppliesTwoDevices_AndKeepsBlocksIndependent()
+    {
+        var presetA = new EqPreset { Name = "A", EqualizerApoText = "Preamp: -3.0 dB\r\nFilter: ON PK Fc 60 Hz Gain 1.0 dB Q 0.70" };
+        var presetB = new EqPreset { Name = "B", EqualizerApoText = "Preamp: -4.0 dB\r\nFilter: ON PK Fc 1000 Hz Gain -2.0 dB Q 1.00" };
+
+        await _manager.WriteDeviceScopedConfigAsync("{0.0.0.00000000}.{aaa}", "{0.0.0.00000000}.{aaa}", presetA.EqualizerApoText, presetA);
+        await _manager.WriteDeviceScopedConfigAsync("{0.0.0.00000000}.{bbb}", "{0.0.0.00000000}.{bbb}", presetB.EqualizerApoText, presetB);
+
+        string body = await File.ReadAllTextAsync(_config.AutoEqEqFile);
+        Assert.Contains("Device: {0.0.0.00000000}.{aaa}", body);
+        Assert.Contains("Device: {0.0.0.00000000}.{bbb}", body);
+        Assert.Contains("Filter: ON PK Fc 60 Hz", body);
+        Assert.Contains("Filter: ON PK Fc 1000 Hz", body);
+
+        var updatedA = new EqPreset { Name = "A2", EqualizerApoText = "Preamp: -5.0 dB\r\nFilter: ON PK Fc 200 Hz Gain -1.0 dB Q 0.80" };
+        await _manager.WriteDeviceScopedConfigAsync("{0.0.0.00000000}.{aaa}", "{0.0.0.00000000}.{aaa}", updatedA.EqualizerApoText, updatedA);
+
+        body = await File.ReadAllTextAsync(_config.AutoEqEqFile);
+        Assert.Contains("# Preset: A2", body);
+        Assert.DoesNotContain("# Preset: A\r", body);
+        Assert.Contains("# Preset: B", body);
+        Assert.Contains("Filter: ON PK Fc 1000 Hz", body);
+        Assert.Equal(2, body.Split("Device:").Length - 1);
+    }
+
+    [Fact]
+    public async Task WriteDeviceScopedConfigAsync_PreservesPreampPerBlock()
+    {
+        var hot = new EqPreset { Name = "Hot", EqualizerApoText = "Preamp: 0.0 dB\r\nFilter: ON PK Fc 60 Hz Gain 6.0 dB Q 0.70", TruePeakDb = 0.5 };
+        var safe = new EqPreset { Name = "Safe", EqualizerApoText = "Preamp: 0.0 dB\r\nFilter: ON PK Fc 1000 Hz Gain 0.5 dB Q 1.00" };
+
+        await _manager.WriteDeviceScopedConfigAsync("hot", "{hot}", hot.EqualizerApoText, hot);
+        await _manager.WriteDeviceScopedConfigAsync("safe", "{safe}", safe.EqualizerApoText, safe);
+
+        string body = await File.ReadAllTextAsync(_config.AutoEqEqFile);
+        Assert.DoesNotContain("Safety limiter guard", body);
+        Assert.Contains("Device: {hot}", body);
+        Assert.Contains("Preamp: 0.0 dB", body);
+        Assert.Contains("Device: {safe}", body);
+        Assert.Equal(2, body.Split("Preamp: 0.0 dB").Length - 1);
+    }
+
+    [Fact]
+    public async Task ApplyPresetAsync_UsesEndpointId_AsDeviceKeyAndPattern()
+    {
+        var preset = new EqPreset { Name = "Endpoint", EqualizerApoText = "Preamp: -3.0 dB" };
+        var info = new AudioOutputInfo { DefaultDeviceId = "{0.0.0.00000000}.{endpoint}", DefaultDeviceName = "USB DAC" };
+
+        await _manager.ApplyPresetAsync(preset, info, "unit");
+
+        string body = await File.ReadAllTextAsync(_config.AutoEqEqFile);
+        Assert.Contains("Device: {0.0.0.00000000}.{endpoint}", body);
+        Assert.Equal("{0.0.0.00000000}.{endpoint}", _store.GetAll().Single().DeviceKey);
+        Assert.Equal("{0.0.0.00000000}.{endpoint}", _store.GetAll().Single().ApoMatchPattern);
+    }
+
+    [Fact]
+    public async Task ApplyPresetAsync_FallsBackToNameToken_WhenEndpointIdMissing()
+    {
+        var preset = new EqPreset { Name = "Fallback", EqualizerApoText = "Preamp: -3.0 dB" };
+        var info = new AudioOutputInfo { DefaultDeviceName = "Default (Speakers) USB DAC" };
+
+        await _manager.ApplyPresetAsync(preset, info, "unit");
+
+        string body = await File.ReadAllTextAsync(_config.AutoEqEqFile);
+        Assert.Contains("Device: USB DAC", body);
+        Assert.Equal("name:USB DAC", _store.GetAll().Single().DeviceKey);
     }
 }

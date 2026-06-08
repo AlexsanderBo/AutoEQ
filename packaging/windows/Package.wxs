@@ -1,0 +1,49 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="AutoEQ"
+    Manufacturer="$(var.Publisher)"
+    Version="$(var.ProductVersion)"
+    UpgradeCode="{1A5E51CB-5B5B-4800-9D8D-5921D17485BA}"
+    Scope="perMachine">
+
+    <SummaryInformation Description="AutoEQ Windows Installer" Manufacturer="$(var.Publisher)" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of AutoEQ is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="AutoEQ">
+        <Component Id="MainExecutable" Guid="{61D3B108-D188-4D1F-BB0E-BB2447825E82}" Bitness="always64">
+          <File Id="AutoEQExe" Source="$(var.PublishDir)AutoEQ.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="ReadmeFile" Guid="{63F1D19D-92D8-469E-80FE-F10E43C197D1}" Bitness="always64">
+          <File Id="ReadmeMd" Source="$(var.PublishDir)README.md" />
+        </Component>
+        <Component Id="AdminNoteFile" Guid="{7E403467-2942-43B4-B043-41275BB17841}" Bitness="always64">
+          <File Id="RunAsAdminNote" Source="$(var.PublishDir)run_as_admin_note.txt" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="AutoEQ">
+        <Component Id="StartMenuShortcut" Guid="{ED01A495-43E4-4B83-88C6-14A67116E8C4}">
+          <Shortcut
+            Id="AutoEQStartMenuShortcut"
+            Name="AutoEQ"
+            Description="AutoEQ"
+            Target="[INSTALLFOLDER]AutoEQ.exe"
+            WorkingDirectory="INSTALLFOLDER" />
+          <RemoveFolder Id="RemoveApplicationProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
+          <RegistryValue Root="HKCU" Key="Software\AutoEQ" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="MainFeature" Title="AutoEQ" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="ReadmeFile" />
+      <ComponentRef Id="AdminNoteFile" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>

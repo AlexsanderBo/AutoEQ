@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>AutoEQ.Core</AssemblyName>
+    <RootNamespace>AutoEQ</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\AutoEQ\Config\AppConfig.cs" Link="Config\AppConfig.cs" />
+    <Compile Include="..\AutoEQ\Config\IAutoEqConfig.cs" Link="Config\IAutoEqConfig.cs" />
+    <Compile Include="..\AutoEQ\Models\*.cs" Link="Models\%(Filename)%(Extension)" />
+    <Compile Include="..\AutoEQ\Services\AppLogger.cs" Link="Services\AppLogger.cs" />
+    <Compile Include="..\AutoEQ\Services\CalibrationService.cs" Link="Services\CalibrationService.cs" />
+    <Compile Include="..\AutoEQ\Services\DspAnalyzer.cs" Link="Services\DspAnalyzer.cs" />
+    <Compile Include="..\AutoEQ\Services\DynamicVoicing.cs" Link="Services\DynamicVoicing.cs" />
+    <Compile Include="..\AutoEQ\Services\OutputAudioProfileStore.cs" Link="Services\OutputAudioProfileStore.cs" />
+    <Compile Include="..\AutoEQ\Services\PresetCatalog.cs" Link="Services\PresetCatalog.cs" />
+    <Compile Include="..\AutoEQ\Services\PresetEngine.cs" Link="Services\PresetEngine.cs" />
+  </ItemGroup>
+</Project>

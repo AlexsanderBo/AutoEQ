@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+cat <<'EOF'
+Removing AutoEQ Linux package.
+User configuration under ~/.config/autoeq, ~/.config/autostart, and ~/.config/pipewire is left untouched.
+EOF
+
+exit 0

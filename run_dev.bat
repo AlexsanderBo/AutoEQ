@@ -1,4 +1,8 @@
-﻿@echo off
-dotnet restore
-if errorlevel 1 exit /b 1
-dotnet run --project AutoEQ\AutoEQ.csproj
+@echo off
+setlocal
+
+set "BASE=%~dp0"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%BASE%scripts\windows\run-dev.ps1"
+@if errorlevel 1 exit /b 1
+
+endlocal

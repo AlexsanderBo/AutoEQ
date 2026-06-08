@@ -18,5 +18,9 @@ public sealed class OutputAudioProfile
     public double MaxCutDb { get; init; } = -6.0;
     public double BassSafetyCutDb { get; init; } = -1.5;
     public bool PreferSpeakerVoicing { get; init; } = true;
+    public bool IsCalibrated { get; init; } = false;
+    public DateTime? CalibratedUtc { get; init; }
+    public int CalibrationSampleCount { get; init; } = 0;
+    public double[]? MeasuredBandAverage { get; init; }
     public DateTime LastSeenUtc { get; init; } = DateTime.UtcNow;
 }

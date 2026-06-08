@@ -6,6 +6,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoEQ", "AutoEQ\AutoEQ.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoEQ.Tests", "AutoEQ.Tests\AutoEQ.Tests.csproj", "{A542CDCC-18EA-46FF-9214-C2B885183F20}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoEQ.Core", "AutoEQ.Core\AutoEQ.Core.csproj", "{B9246071-42C2-4B16-AD9F-E6B522C3CF12}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoEQ.Linux", "AutoEQ.Linux\AutoEQ.Linux.csproj", "{B30524CF-5127-4981-84F2-A959F4B70EB6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,5 +24,13 @@ Global
 		{A542CDCC-18EA-46FF-9214-C2B885183F20}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A542CDCC-18EA-46FF-9214-C2B885183F20}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A542CDCC-18EA-46FF-9214-C2B885183F20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9246071-42C2-4B16-AD9F-E6B522C3CF12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9246071-42C2-4B16-AD9F-E6B522C3CF12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9246071-42C2-4B16-AD9F-E6B522C3CF12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9246071-42C2-4B16-AD9F-E6B522C3CF12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B30524CF-5127-4981-84F2-A959F4B70EB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B30524CF-5127-4981-84F2-A959F4B70EB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B30524CF-5127-4981-84F2-A959F4B70EB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B30524CF-5127-4981-84F2-A959F4B70EB6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,5 +1,5 @@
-﻿using NAudio.CoreAudioApi;
-using System.Management;
+﻿using System.Management;
+using NAudio.CoreAudioApi;
 using AutoEQ.Models;
 
 namespace AutoEQ.Services;
@@ -8,17 +8,38 @@ public interface ISystemVolumeService
 {
     AudioOutputInfo GetAudioOutputInfo();
     int GetMasterVolumePercent();
-    void SetMasterVolumePercent(int percent);
+    bool GetMute();
+    event EventHandler<SystemVolumeChangedEventArgs>? VolumeChanged;
+}
+
+public sealed class SystemVolumeChangedEventArgs : EventArgs
+{
+    public SystemVolumeChangedEventArgs(int volumePercent, bool isMuted, string deviceId, string deviceName)
+    {
+        VolumePercent = volumePercent;
+        IsMuted = isMuted;
+        DeviceId = deviceId;
+        DeviceName = deviceName;
+    }
+
+    public int VolumePercent { get; }
+    public bool IsMuted { get; }
+    public string DeviceId { get; }
+    public string DeviceName { get; }
 }
 
 public sealed class SystemVolumeService : ISystemVolumeService
 {
     private readonly MMDeviceEnumerator _enumerator = new();
+    private readonly object _gate = new();
     private MMDevice? _renderDevice;
+    private AudioEndpointVolumeNotificationDelegate? _volumeNotification;
+
+    public event EventHandler<SystemVolumeChangedEventArgs>? VolumeChanged;
 
     public AudioOutputInfo GetAudioOutputInfo()
     {
-        using MMDevice defaultDevice = _enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        using MMDevice defaultDevice = GetWindowsDefaultRenderEndpoint(_enumerator);
         MMDeviceCollection activeOutputs = _enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
 
         string[] outputNames = activeOutputs
@@ -37,88 +58,104 @@ public sealed class SystemVolumeService : ISystemVolumeService
             MainboardName = ReadMainboardName(),
             SoundCardName = soundCardName,
             SoundCardVersion = soundCardVersion,
+            Role = "Console",
             ActiveOutputNames = outputNames
         };
     }
 
-    private static string ReadMainboardName()
+    internal static MMDevice GetWindowsDefaultRenderEndpoint(MMDeviceEnumerator enumerator)
     {
         try
         {
+            return enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Console);
+        }
+        catch
+        {
+            return enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        }
+    }
+
+    private static string ReadMainboardName()
+    {
+        // WMI Win32_BaseBoard cho hãng + model mainboard thật; fallback về tên máy nếu thất bại.
+        if (!OperatingSystem.IsWindows())
+            return string.IsNullOrWhiteSpace(Environment.MachineName) ? "Unknown machine" : Environment.MachineName;
+
+        try
+        {
             using var searcher = new ManagementObjectSearcher("SELECT Manufacturer, Product FROM Win32_BaseBoard");
-            foreach (ManagementObject board in searcher.Get().Cast<ManagementObject>())
+            foreach (ManagementObject board in searcher.Get())
             {
-                string manufacturer = Convert.ToString(board["Manufacturer"])?.Trim() ?? string.Empty;
-                string product = Convert.ToString(board["Product"])?.Trim() ?? string.Empty;
-                string name = string.Join(" ", new[] { manufacturer, product }.Where(part => !string.IsNullOrWhiteSpace(part)));
+                string manufacturer = (board["Manufacturer"] as string)?.Trim() ?? "";
+                string product = (board["Product"] as string)?.Trim() ?? "";
+                string name = $"{manufacturer} {product}".Trim();
                 if (!string.IsNullOrWhiteSpace(name)) return name;
             }
         }
         catch
         {
-            // WMI can be unavailable on trimmed Windows installs; keep the UI usable.
+            // WMI có thể bị chặn/không khả dụng; rơi xuống fallback.
         }
 
-        return "Unknown mainboard";
+        return string.IsNullOrWhiteSpace(Environment.MachineName) ? "Unknown machine" : Environment.MachineName;
     }
 
     private static (string Name, string Version) ReadSoundCardInfo(string fallbackName)
     {
+        // Win32_SoundDevice cho tên sound card; driver version lấy từ Win32_PnPSignedDriver khớp theo tên.
+        if (!OperatingSystem.IsWindows())
+            return (string.IsNullOrWhiteSpace(fallbackName) ? "Unknown sound card" : fallbackName, "Windows endpoint");
+
         try
         {
-            using var searcher = new ManagementObjectSearcher("SELECT Name, PNPDeviceID FROM Win32_SoundDevice");
-            (string Name, string Version)? firstDevice = null;
-            foreach (ManagementObject soundDevice in searcher.Get().Cast<ManagementObject>())
+            using var searcher = new ManagementObjectSearcher("SELECT Name, ProductName FROM Win32_SoundDevice");
+            foreach (ManagementObject sound in searcher.Get())
             {
-                string name = Convert.ToString(soundDevice["Name"])?.Trim() ?? string.Empty;
+                string name = (sound["ProductName"] as string)?.Trim()
+                              ?? (sound["Name"] as string)?.Trim()
+                              ?? "";
                 if (string.IsNullOrWhiteSpace(name)) continue;
 
-                string pnpDeviceId = Convert.ToString(soundDevice["PNPDeviceID"])?.Trim() ?? string.Empty;
-                string version = ReadSoundDriverVersion(name, pnpDeviceId);
-                firstDevice ??= (name, version);
-                if (LooksLikeOnboardSound(name)) return (name, version);
+                string version = ReadDriverVersion(name);
+                return (name, string.IsNullOrWhiteSpace(version) ? "driver n/a" : version);
             }
-
-            if (firstDevice.HasValue) return firstDevice.Value;
         }
         catch
         {
-            // Fall back to the active render endpoint if hardware inventory cannot be read.
+            // WMI không khả dụng; dùng tên endpoint làm fallback.
         }
 
-        return (string.IsNullOrWhiteSpace(fallbackName) ? "Unknown sound card" : fallbackName, "Unknown version");
+        return (string.IsNullOrWhiteSpace(fallbackName) ? "Unknown sound card" : fallbackName, "Windows endpoint");
     }
 
-    private static string ReadSoundDriverVersion(string deviceName, string pnpDeviceId)
+    private static string ReadDriverVersion(string deviceName)
     {
+        if (!OperatingSystem.IsWindows()) return "";
+
         try
         {
-            using var searcher = new ManagementObjectSearcher("SELECT DeviceName, DeviceID, DriverVersion FROM Win32_PnPSignedDriver WHERE DeviceClass = 'MEDIA'");
-            foreach (ManagementObject driver in searcher.Get().Cast<ManagementObject>())
+            using var searcher = new ManagementObjectSearcher(
+                "SELECT DeviceName, DriverVersion FROM Win32_PnPSignedDriver WHERE DeviceClass = 'MEDIA'");
+            foreach (ManagementObject driver in searcher.Get())
             {
-                string driverDeviceId = Convert.ToString(driver["DeviceID"])?.Trim() ?? string.Empty;
-                string driverDeviceName = Convert.ToString(driver["DeviceName"])?.Trim() ?? string.Empty;
-                bool sameDeviceId = !string.IsNullOrWhiteSpace(pnpDeviceId) && string.Equals(driverDeviceId, pnpDeviceId, StringComparison.OrdinalIgnoreCase);
-                bool sameDeviceName = !string.IsNullOrWhiteSpace(driverDeviceName) && deviceName.Contains(driverDeviceName, StringComparison.OrdinalIgnoreCase);
-                if (!sameDeviceId && !sameDeviceName) continue;
+                string driverDevice = (driver["DeviceName"] as string)?.Trim() ?? "";
+                if (string.IsNullOrWhiteSpace(driverDevice)) continue;
 
-                string version = Convert.ToString(driver["DriverVersion"])?.Trim() ?? string.Empty;
-                if (!string.IsNullOrWhiteSpace(version)) return version;
+                // Khớp lỏng: tên thiết bị WMI sound thường trùng/chứa tên driver MEDIA.
+                if (driverDevice.Contains(deviceName, StringComparison.OrdinalIgnoreCase)
+                    || deviceName.Contains(driverDevice, StringComparison.OrdinalIgnoreCase))
+                {
+                    string version = (driver["DriverVersion"] as string)?.Trim() ?? "";
+                    if (!string.IsNullOrWhiteSpace(version)) return $"v{version}";
+                }
             }
         }
         catch
         {
-            // Driver version is optional; the hardware name is still enough for the main UI.
+            // Bỏ qua, trả rỗng để caller dùng nhãn mặc định.
         }
 
-        return "Unknown version";
-    }
-
-    private static bool LooksLikeOnboardSound(string name)
-    {
-        string normalized = name.ToLowerInvariant();
-        string[] onboardKeywords = { "realtek", "high definition audio", "intel", "amd", "nvidia", "usb audio" };
-        return onboardKeywords.Any(normalized.Contains);
+        return "";
     }
 
     public int GetMasterVolumePercent()
@@ -126,20 +163,60 @@ public sealed class SystemVolumeService : ISystemVolumeService
         return (int)Math.Round(GetRenderDevice().AudioEndpointVolume.MasterVolumeLevelScalar * 100);
     }
 
-    public void SetMasterVolumePercent(int percent)
+    public bool GetMute()
     {
-        int clamped = Math.Clamp(percent, 0, 100);
-        GetRenderDevice().AudioEndpointVolume.MasterVolumeLevelScalar = clamped / 100f;
+        return GetRenderDevice().AudioEndpointVolume.Mute;
     }
 
     private MMDevice GetRenderDevice()
     {
-        if (_renderDevice == null || _renderDevice.State != DeviceState.Active)
+        lock (_gate)
         {
-            _renderDevice?.Dispose();
-            _renderDevice = _enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            MMDevice defaultDevice = GetWindowsDefaultRenderEndpoint(_enumerator);
+            bool mustSwap = _renderDevice == null
+                || _renderDevice.State != DeviceState.Active
+                || !string.Equals(_renderDevice.ID, defaultDevice.ID, StringComparison.OrdinalIgnoreCase);
+
+            if (mustSwap)
+            {
+                // Vì default endpoint có thể đổi khi app đang chạy, bỏ callback cũ rồi đăng ký lại cho thiết bị mới.
+                UnregisterVolumeCallback();
+                _renderDevice?.Dispose();
+                _renderDevice = defaultDevice;
+                RegisterVolumeCallback(_renderDevice);
+            }
+            else
+            {
+                defaultDevice.Dispose();
+            }
+
+            return _renderDevice ?? throw new InvalidOperationException("Không lấy được default render audio endpoint.");
+        }
+    }
+
+    private void RegisterVolumeCallback(MMDevice device)
+    {
+        _volumeNotification = data =>
+        {
+            int percent = (int)Math.Round(data.MasterVolume * 100);
+            VolumeChanged?.Invoke(this, new SystemVolumeChangedEventArgs(percent, data.Muted, device.ID, device.FriendlyName));
+        };
+        device.AudioEndpointVolume.OnVolumeNotification += _volumeNotification;
+    }
+
+    private void UnregisterVolumeCallback()
+    {
+        if (_renderDevice is null || _volumeNotification is null) return;
+
+        try
+        {
+            _renderDevice.AudioEndpointVolume.OnVolumeNotification -= _volumeNotification;
+        }
+        catch
+        {
+            // Vì endpoint có thể đã biến mất, bỏ qua để app tiếp tục bám default mới.
         }
 
-        return _renderDevice;
+        _volumeNotification = null;
     }
 }

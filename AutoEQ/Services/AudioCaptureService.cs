@@ -5,16 +5,23 @@ using AutoEQ.Models;
 
 namespace AutoEQ.Services;
 
+public readonly record struct CaptureFormatInfo(int SampleRate, int BitsPerSample, int Channels);
+
 public interface IAudioCaptureService : IDisposable
 {
     event EventHandler<AudioFeatures>? FeaturesAvailable;
     event EventHandler<float[]>? WaveformAvailable;
     event EventHandler<string>? ErrorOccurred;
     event EventHandler<string>? DeviceChanged;
+    event EventHandler<CaptureFormatInfo>? FormatChanged;
     string CurrentDeviceName { get; }
+    bool IsRunning { get; }
     void Start();
     void Stop();
+    void Restart();
 }
+
+
 
 public sealed class AudioCaptureService : IAudioCaptureService
 {
@@ -29,6 +36,8 @@ public sealed class AudioCaptureService : IAudioCaptureService
     private int _channels;
     private bool _isRunning;
     private int _analysisInProgress;
+    private int _restarting;
+
 
     public AudioCaptureService(IDspAnalyzer analyzer)
     {
@@ -39,10 +48,14 @@ public sealed class AudioCaptureService : IAudioCaptureService
     public event EventHandler<float[]>? WaveformAvailable;
     public event EventHandler<string>? ErrorOccurred;
     public event EventHandler<string>? DeviceChanged;
+    public event EventHandler<CaptureFormatInfo>? FormatChanged;
 
     public IDspAnalyzer Analyzer => _analyzer;
 
     public string CurrentDeviceName { get; private set; } = "Unknown";
+
+    public bool IsRunning => _isRunning;
+
 
     public void Start()
     {
@@ -51,7 +64,7 @@ public sealed class AudioCaptureService : IAudioCaptureService
         try
         {
             using var enumerator = new MMDeviceEnumerator();
-            using MMDevice device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            using MMDevice device = SystemVolumeService.GetWindowsDefaultRenderEndpoint(enumerator);
             CurrentDeviceName = device.FriendlyName;
             DeviceChanged?.Invoke(this, CurrentDeviceName);
 
@@ -62,6 +75,8 @@ public sealed class AudioCaptureService : IAudioCaptureService
             _capture.RecordingStopped += OnRecordingStopped;
             _capture.StartRecording();
             _isRunning = true;
+            FormatChanged?.Invoke(this, new CaptureFormatInfo(_sampleRate, _capture.WaveFormat.BitsPerSample, _channels));
+
         }
         catch (Exception ex)
         {
@@ -95,7 +110,26 @@ public sealed class AudioCaptureService : IAudioCaptureService
         }
     }
 
+    public void Restart()
+    {
+        // Default render endpoint đã đổi: dừng capture cũ rồi bám thiết bị mới.
+        // Guard chống Restart chồng nhau khi đổi device liên tục (watcher đã debounce,
+        // đây là lớp bảo vệ cuối tránh race Stop/Start).
+        if (Interlocked.Exchange(ref _restarting, 1) == 1) return;
+        try
+        {
+            Stop();
+            Start();
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _restarting, 0);
+        }
+    }
+
+
     private void OnDataAvailable(object? sender, WaveInEventArgs e)
+
     {
         try
         {

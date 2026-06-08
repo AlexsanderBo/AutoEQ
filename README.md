@@ -1,26 +1,24 @@
 ﻿# AutoEQ
 
-AutoEQ is a local Windows desktop app for general output-device AutoEQ. It captures system audio with WASAPI loopback, analyzes sound every few seconds, builds a rule-based EQ curve from the active OutputAudioProfile, and writes that preset to Equalizer APO.
+AutoEQ is a local output-device AutoEQ project. The desktop app uses Avalonia UI with FluentAvalonia and targets Windows plus Ubuntu/Linux. On Windows it captures system audio with WASAPI loopback and writes presets to Equalizer APO. On Ubuntu/Linux it uses PulseAudio/PipeWire monitor capture and writes PipeWire parametric EQ config.
 
 The app is designed for a clean, warm, vocal-forward sound with tight bass and less boom. It does not use machine learning, cloud AI, uploads, or external APIs. Audio analysis happens locally on the user's PC.
 
 ## Open-source dependencies
 
-- .NET 8: runtime and build SDK for the Windows app.
-- WPF: Windows desktop UI framework included with .NET.
+- .NET 8: runtime and build SDK for the desktop app.
+- Avalonia UI + FluentAvaloniaUI: cross-platform desktop UI.
 - NAudio: open-source WASAPI loopback audio capture.
 - MathNet.Numerics: open-source FFT and numerical DSP utilities.
-- Hardcodet.NotifyIcon.Wpf: open-source WPF system tray support.
 - Equalizer APO: open-source system-wide audio EQ backend.
-
-System tray support uses Hardcodet.NotifyIcon.Wpf so the app can later expose quick actions such as Open AutoEQ, Bypass, Clean Warm, Night Mode, and Exit.
 
 ## Related free/open-source projects
 
 - [AutoEq](https://github.com/jaakkopasanen/AutoEq) (MIT): reference for parametric EQ filters, target curves, and Equalizer APO export format. AutoEQ uses it as an algorithm/format reference only and does not import headphone datasets for the device-specific profile.
+- [Avalonia](https://github.com/AvaloniaUI/Avalonia) (MIT): cross-platform desktop UI framework.
+- [FluentAvalonia](https://github.com/amwx/FluentAvalonia) (MIT): Fluent-style Avalonia controls and theme.
 - [NAudio](https://github.com/naudio/NAudio) (MIT): WASAPI loopback capture dependency used by the Windows app.
 - [Math.NET Numerics](https://github.com/mathnet/mathnet-numerics) (MIT): FFT and numerical DSP dependency used by the analyzer.
-- [Hardcodet.NotifyIcon.Wpf](https://github.com/hardcodet/wpf-notifyicon) (MIT): WPF tray icon dependency for future tray actions.
 - [EACS](https://github.com/psidex/EACS) (MIT): reference for safe Equalizer APO configuration switching. AutoEQ does not vendor its code.
 - [Equalizer APO mirror](https://github.com/mirror/equalizerapo) (GPL-2.0): external backend reference. Users install Equalizer APO separately; AutoEQ does not embed or copy Equalizer APO code.
 
@@ -43,7 +41,7 @@ run_dev.bat
 
 Use this while editing code. Stop the running app, save your files, then run `run_dev.bat` again to launch the latest source.
 
-Editing `.cs` or `.xaml` files does not update an already-built `.exe`. The app must be restarted from source or rebuilt.
+Editing `.cs` or `.axaml` files does not update an already-built `.exe`. The app must be restarted from source or rebuilt.
 
 ## Build and test
 
@@ -52,7 +50,14 @@ dotnet build AutoEQ.sln
 dotnet test AutoEQ.sln --no-build
 ```
 
-The test project uses xUnit and targets `net8.0-windows10.0.19041.0` so it can reference the WPF app while adding non-UI characterization tests around DSP and future preset-switching logic.
+The test project uses xUnit and targets `net8.0`.
+
+Packaging and release docs:
+
+- `docs/END_USER_INSTALL.md`
+- `docs/PACKAGING.md`
+- `docs/RELEASE_CHECKLIST.md`
+- `docs/CLEANUP_NOTES.md`
 
 ## Native WASAPI analyzer
 
@@ -77,7 +82,7 @@ System audio
   -> Windows mixer / Equalizer APO / selected output endpoint
   -> native WASAPI loopback analyzer
   -> JSON AutoEQ suggestion
-  -> WPF app writes Equalizer APO preset
+  -> Avalonia app writes Equalizer APO preset
 ```
 
 This avoids double audio, echo, and feedback. The native `--process` mode is included only for future routing such as:
@@ -89,6 +94,18 @@ Apps -> Virtual Audio Cable -> native WASAPI process -> selected output endpoint
 Do not use `--process` on the same default output endpoint unless you intentionally want a render test.
 
 ### Build native WASAPI module
+
+Recommended MSVC helper build:
+
+```bat
+native\wasapi_autoeq\build_native.bat
+```
+
+Run this from a Visual Studio Developer Command Prompt before `build.bat` when you need the native helper included in the app output. The C# build and tests do not require `wasapi_autoeq.exe`; if it is missing and MSVC is unavailable, the app still builds and the runtime `NativeWasapiAutoEqClient.IsAvailable()` guard leaves native monitoring unavailable instead of crashing. Release builds that need native monitoring must include:
+
+```text
+native\wasapi_autoeq\wasapi_autoeq.exe
+```
 
 GCC/MinGW:
 
@@ -112,6 +129,58 @@ Experimental process mode with separate routing:
 
 ```bat
 wasapi_autoeq.exe --process --input "Virtual Cable" --output "Realtek" --seconds 10
+```
+
+## Ubuntu / Linux runner
+
+Ubuntu/Linux support is available through the Avalonia desktop app and the existing CLI runner:
+
+```text
+AutoEQ           Avalonia desktop app
+AutoEQ.Core      shared DSP and preset engine
+AutoEQ.Linux     Ubuntu/PipeWire CLI runner
+```
+
+Build a self-contained linux-x64 package from Windows:
+
+```bat
+build_linux.bat
+```
+
+Copy `dist\AutoEQ.Linux` to Ubuntu, then run:
+
+```bash
+chmod +x autoeq-linux install_ubuntu.sh
+./install_ubuntu.sh
+```
+
+Ubuntu dependencies:
+
+```bash
+sudo apt install pulseaudio-utils pipewire pipewire-pulse
+```
+
+The Linux runner:
+
+- reads the default output monitor through `pactl`/`parec`;
+- analyzes audio with the same `AutoEQ.Core` DSP and preset engine;
+- writes `~/.config/autoeq/AutoEQ-PipeWire.txt`;
+- writes `~/.config/pipewire/pipewire.conf.d/99-autoeq-filter-chain.conf`;
+- can install `~/.config/autostart/autoeq-linux.desktop`.
+
+After installing the PipeWire config, restart PipeWire and select `AutoEQ Sink` in Ubuntu sound settings:
+
+```bash
+systemctl --user restart pipewire pipewire-pulse
+```
+
+Useful commands:
+
+```bash
+./autoeq-linux --install-pipewire --install-startup --setup-only
+./autoeq-linux --background
+./autoeq-linux --background --restart-on-change
+./autoeq-linux --help
 ```
 
 ## Build portable folder
@@ -196,4 +265,4 @@ Please run AutoEQ as Administrator once to connect with Equalizer APO.
 
 ## Privacy
 
-AutoEQ does not upload audio. It does not call cloud AI or external APIs. All audio capture and DSP analysis run locally on the Windows machine.
+AutoEQ does not upload audio. It does not call cloud AI or external APIs. All audio capture and DSP analysis run locally on the machine.

@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+chmod 755 /usr/bin/autoeq-linux
+
+cat <<'EOF'
+AutoEQ Linux installed.
+
+Open "AutoEQ Linux" from the app launcher, or run:
+  autoeq-linux --background
+
+On first run it creates the user PipeWire config and requests "AutoEQ Sink"
+as the default output. If your desktop keeps the old output selected, open
+Ubuntu sound settings and select "AutoEQ Sink" once.
+EOF
+
+exit 0

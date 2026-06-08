@@ -1,0 +1,546 @@
+<Window x:Class="AutoEQ.Views.MainWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:AutoEQ.Services"
+        Title="AutoEQ"
+        Width="1360"
+        Height="860"
+        MinWidth="1080"
+        MinHeight="720">
+    <Grid RowDefinitions="Auto,*" Background="{StaticResource AppBackgroundBrush}">
+            <Border Grid.Row="0" Classes="panel" Margin="14" Padding="18,14">
+                <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Border Width="42" Height="42" CornerRadius="8" Background="{StaticResource GoldGradientBrush}" BorderBrush="{StaticResource GoldBrush}" BorderThickness="1">
+                            <TextBlock Text="A" Foreground="#170E08" FontWeight="Bold" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel>
+                            <TextBlock Text="AUTOEQ" Classes="title" />
+                            <TextBlock Text="{Binding [app.subtitle], Source={x:Static loc:Localization.Instance}}" Classes="caption" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+                        <Border Classes="metric" Padding="10,7">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Ellipse Width="9" Height="9" Fill="{Binding IsCaptureHealthy, Converter={StaticResource BoolToBrushConverter}}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding CaptureStatusText}" Foreground="{Binding IsCaptureHealthy, Converter={StaticResource BoolToBrushConverter}}" Classes="mono" />
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="metric" Padding="10,7">
+                            <TextBlock Text="{Binding BandAndIntervalText}" Classes="mono" />
+                        </Border>
+                        <Border Classes="metric" Padding="10,7">
+                            <TextBlock Text="{Binding AudioFormatText}" Classes="mono" />
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal" Spacing="12">
+                        <Border Classes="metric" Padding="3" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <Button Classes="lang" Content="VI" Command="{Binding ToggleCommand, Source={x:Static loc:Localization.Instance}}"
+                                        Classes.langOn="{Binding IsVietnamese, Source={x:Static loc:Localization.Instance}}" />
+                                <Button Classes="lang" Content="EN" Command="{Binding ToggleCommand, Source={x:Static loc:Localization.Instance}}"
+                                        Classes.langOn="{Binding IsEnglish, Source={x:Static loc:Localization.Instance}}" />
+                            </StackPanel>
+                        </Border>
+                        <StackPanel Width="280" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding [header.output], Source={x:Static loc:Localization.Instance}}" Classes="mono" Foreground="{StaticResource FaintBrush}" TextAlignment="Right" />
+                            <TextBlock Text="{Binding OutputDeviceName}" TextTrimming="CharacterEllipsis" TextAlignment="Right" Classes="heading" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Border Grid.Row="1" Grid.ColumnSpan="3" Margin="0,12,0,0" Classes="metric" IsVisible="{Binding ApoWarningVisible}">
+                        <TextBlock Text="{Binding [apo.warning], Source={x:Static loc:Localization.Instance}}" Foreground="{StaticResource HotBrush}" TextWrapping="Wrap" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="1" ColumnDefinitions="330,*,370" Margin="14,0,14,14">
+                <Border Grid.Column="0" Classes="board" Margin="0,0,10,0">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="4,0,4,12">
+                            <TextBlock Text="{Binding [board.control], Source={x:Static loc:Localization.Instance}}" Classes="heading" />
+                            <TextBlock Grid.Column="1" Text="{Binding [board.control.tag], Source={x:Static loc:Localization.Instance}}" Classes="mono" Foreground="{StaticResource AmberBrush}" />
+                        </Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="14">
+                                <Border Classes="card">
+                                    <StackPanel Spacing="14">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                <TextBlock Text="{Binding [autoeq.title], Source={x:Static loc:Localization.Instance}}" Classes="heading" />
+                                                <TextBlock Text="{Binding AutoUpdateStatus}" Classes="caption" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoEqEnabled}" VerticalAlignment="Center" MinWidth="0" />
+                                        </Grid>
+
+                                        <Border Classes="metric">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding [preset.current], Source={x:Static loc:Localization.Instance}}" Classes="caption" />
+                                                    <TextBlock Text="{Binding CurrentPresetName}" Classes="heading" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="LIVE" Foreground="{StaticResource GreenBrush}" Classes="mono" VerticalAlignment="Center" IsVisible="{Binding AutoEqEnabled}" />
+                                            </Grid>
+                                        </Border>
+
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="{Binding [analysis.source], Source={x:Static loc:Localization.Instance}}" Classes="caption" />
+                                            <TextBlock Grid.Column="1" Text="{Binding AnalysisState}" Classes="mono" />
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="{Binding [analysis.confidence], Source={x:Static loc:Localization.Instance}}" Classes="caption" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Confidence, StringFormat={}{0:0.00}}" Classes="mono" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Classes="card" IsVisible="{Binding AutoEqEnabled, Converter={StaticResource InverseBooleanConverter}}">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="{Binding [preset.manual], Source={x:Static loc:Localization.Instance}}" Classes="heading" />
+                                        <ComboBox ItemsSource="{Binding PresetNames}" SelectedItem="{Binding CurrentPresetName}" />
+                                        <Button Classes="primary" Content="{Binding [preset.apply], Source={x:Static loc:Localization.Instance}}" Command="{Binding ApplyPresetCommand}" HorizontalAlignment="Stretch" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Classes="card">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="{Binding [listen.options], Source={x:Static loc:Localization.Instance}}" Classes="heading" />
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding [listen.nearwall], Source={x:Static loc:Localization.Instance}}" />
+                                                <TextBlock Text="{Binding [listen.nearwall.desc], Source={x:Static loc:Localization.Instance}}" Classes="caption" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding NearWallMode}" VerticalAlignment="Center" MinWidth="0" />
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding [listen.night], Source={x:Static loc:Localization.Instance}}" />
+                                                <TextBlock Text="{Binding [listen.night.desc], Source={x:Static loc:Localization.Instance}}" Classes="caption" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding NightMode}" VerticalAlignment="Center" MinWidth="0" />
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding [listen.loudness], Source={x:Static loc:Localization.Instance}}" />
+                                                <TextBlock Text="{Binding [listen.loudness.desc], Source={x:Static loc:Localization.Instance}}" Classes="caption" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding LoudnessCompEnabled}" VerticalAlignment="Center" MinWidth="0" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Classes="card">
+                                    <StackPanel Spacing="10">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="{Binding [volume.title], Source={x:Static loc:Localization.Instance}}" Classes="heading" />
+                                            <TextBlock Grid.Column="1" Text="{Binding VolumePercent, StringFormat={}{0}%}" Classes="mono" />
+                                        </Grid>
+                                        <ProgressBar Value="{Binding VolumePercent}" Maximum="100" Height="8" />
+                                        <TextBlock Text="{Binding [volume.muted], Source={x:Static loc:Localization.Instance}}" Foreground="{StaticResource HotBrush}" IsVisible="{Binding IsMuted}" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <Border Grid.Column="1" Classes="board" Margin="4,0,14,0">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="4,0,4,12">
+                            <TextBlock Text="{Binding [board.signal], Source={x:Static loc:Localization.Instance}}" Classes="heading" />
+                            <TextBlock Grid.Column="1" Text="{Binding [board.signal.tag], Source={x:Static loc:Localization.Instance}}" Classes="mono" Foreground="{StaticResource AmberBrush}" />
+                        </Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="14">
+                                <Border Classes="card">
+                                    <Grid ColumnDefinitions="320,*" MinHeight="330">
+                                        <Grid Width="300" Height="300" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True">
+                                            <Ellipse Width="292" Height="292" Fill="#180C06" Stroke="{StaticResource LineBrush}" StrokeThickness="1.2" Opacity="0.88" />
+                                            <Ellipse Width="282" Height="282" Stroke="{StaticResource CopperBrush}" StrokeThickness="1" Opacity="0.42" />
+                                            <Grid x:Name="VinylDisc" Width="258" Height="258" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%" IsHitTestVisible="False">
+                                                <Grid.RenderTransform>
+                                                    <RotateTransform />
+                                                </Grid.RenderTransform>
+                                                <Ellipse Stroke="#090604" StrokeThickness="2">
+                                                    <Ellipse.Fill>
+                                                        <RadialGradientBrush Center="0.45,0.38" GradientOrigin="0.28,0.20" RadiusX="0.75" RadiusY="0.75">
+                                                            <GradientStop Color="#8A4F1B" Offset="0" />
+                                                            <GradientStop Color="#3A1E0E" Offset="0.28" />
+                                                            <GradientStop Color="#110A06" Offset="0.68" />
+                                                            <GradientStop Color="#050403" Offset="1" />
+                                                        </RadialGradientBrush>
+                                                    </Ellipse.Fill>
+                                                </Ellipse>
+                                                <Ellipse Margin="14" Fill="Transparent" Stroke="#160C07" StrokeThickness="8" />
+                                                <Ellipse Margin="27" Fill="Transparent" Stroke="#4F3118" StrokeThickness="1" Opacity="0.60" />
+                                                <Ellipse Margin="38" Fill="Transparent" Stroke="#120A06" StrokeThickness="1" Opacity="0.95" />
+                                                <Ellipse Margin="50" Fill="Transparent" Stroke="{StaticResource CopperBrush}" StrokeThickness="1" Opacity="0.36" />
+                                                <Ellipse Margin="63" Fill="Transparent" Stroke="#15100A" StrokeThickness="1" Opacity="0.85" />
+                                                <Ellipse Margin="76" Fill="Transparent" Stroke="#5C391D" StrokeThickness="0.8" Opacity="0.32" />
+                                                <Ellipse Margin="89" Fill="Transparent" Stroke="#120A06" StrokeThickness="0.9" Opacity="0.8" />
+                                                <Ellipse Margin="19" Fill="Transparent" Stroke="#C48A3A" StrokeThickness="0.8" Opacity="0.18" />
+                                                <Ellipse Margin="25" Fill="Transparent" Stroke="#26170B" StrokeThickness="1" Opacity="0.62" />
+                                                <Ellipse Margin="32" Fill="Transparent" Stroke="#7D4E21" StrokeThickness="0.7" Opacity="0.24" />
+                                                <Ellipse Margin="40" Fill="Transparent" Stroke="#170E07" StrokeThickness="0.9" Opacity="0.70" />
+                                                <Ellipse Margin="48" Fill="Transparent" Stroke="#A66A2A" StrokeThickness="0.7" Opacity="0.22" />
+                                                <Ellipse Margin="57" Fill="Transparent" Stroke="#1B1008" StrokeThickness="0.9" Opacity="0.78" />
+                                                <Ellipse Margin="66" Fill="Transparent" Stroke="#6F431E" StrokeThickness="0.7" Opacity="0.24" />
+                                                <Ellipse Margin="76" Fill="Transparent" Stroke="#170E07" StrokeThickness="0.8" Opacity="0.68" />
+                                                <Ellipse Margin="87" Fill="Transparent" Stroke="#8D5E2A" StrokeThickness="0.7" Opacity="0.20" />
+                                                <Ellipse Margin="101" Fill="Transparent" Stroke="#1A0F08" StrokeThickness="0.8" Opacity="0.74" />
+                                                <Ellipse Margin="23" Fill="Transparent" Stroke="#E7C77B" StrokeThickness="1" StrokeDashArray="1,22" Opacity="0.16" />
+                                                <Ellipse Margin="43" Fill="Transparent" Stroke="#C58A39" StrokeThickness="0.9" StrokeDashArray="14,42" Opacity="0.14" />
+                                                <Ellipse Margin="71" Fill="Transparent" Stroke="#E0B45D" StrokeThickness="0.8" StrokeDashArray="2,26" Opacity="0.12" />
+                                                <Path Data="M61,81 C89,58 123,50 158,57" Stroke="#E7C77B" StrokeThickness="1.6" StrokeLineCap="Round" Opacity="0.14" />
+                                                <Path Data="M69,199 C111,218 162,210 195,178" Stroke="#C58A39" StrokeThickness="1.4" StrokeLineCap="Round" Opacity="0.12" />
+                                                <Canvas Width="258" Height="258" IsHitTestVisible="False">
+                                                    <Ellipse Canvas.Left="207" Canvas.Top="88" Width="2.4" Height="2.4" Fill="#F5D98A" Opacity="0.42" />
+                                                    <Ellipse Canvas.Left="63" Canvas.Top="174" Width="2" Height="2" Fill="#E7C77B" Opacity="0.34" />
+                                                    <Ellipse Canvas.Left="180" Canvas.Top="207" Width="1.8" Height="1.8" Fill="#B5782D" Opacity="0.34" />
+                                                    <Path Data="M43,115 L62,111" Stroke="#F7D98C" StrokeThickness="1" StrokeLineCap="Round" Opacity="0.16" />
+                                                    <Path Data="M193,63 L211,70" Stroke="#C58A39" StrokeThickness="0.9" StrokeLineCap="Round" Opacity="0.15" />
+                                                </Canvas>
+                                                <Ellipse Width="94" Height="94" Fill="{StaticResource GoldGradientBrush}" Stroke="#0A0704" StrokeThickness="3" />
+                                                <Ellipse Width="76" Height="76" Fill="Transparent" Stroke="#6E4218" StrokeThickness="1" Opacity="0.42" />
+                                                <Path Data="M98,111 C113,98 144,98 160,113" Stroke="#FFF0B8" StrokeThickness="4" StrokeLineCap="Round" Opacity="0.20" />
+                                                <TextBlock Text="AUTO·EQ" Foreground="#160D07" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Grid>
+                                            <Canvas Width="258" Height="258" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                                                <Ellipse Canvas.Left="123" Canvas.Top="123" Width="12" Height="12" Fill="#FFF0B7" Stroke="#6B3E13" StrokeThickness="1" Opacity="0.96" />
+                                                <Ellipse Canvas.Left="126" Canvas.Top="126" Width="6" Height="6" Fill="#5B3513" Opacity="0.88" />
+                                            </Canvas>
+                                            <Canvas x:Name="Tonearm" Width="300" Height="300" IsHitTestVisible="False" RenderTransformOrigin="85.7%,17.7%">
+                                                <Canvas.RenderTransform>
+                                                    <RotateTransform Angle="0">
+                                                        <RotateTransform.Transitions>
+                                                            <Transitions>
+                                                                <DoubleTransition Property="Angle" Duration="0:0:0.45" Easing="CubicEaseInOut" />
+                                                            </Transitions>
+                                                        </RotateTransform.Transitions>
+                                                    </RotateTransform>
+                                                </Canvas.RenderTransform>
+                                                <Path Data="M154,28 A126,126 0 0 1 270,136" Stroke="{StaticResource GoldBrush}" StrokeThickness="2" StrokeLineCap="Round" Opacity="0.36" />
+                                                <Path Data="M257,48 L183,149" Stroke="{StaticResource GoldBrush}" StrokeThickness="8" StrokeLineCap="Round" Opacity="0.78" />
+                                                <Path Data="M255,50 L181,151" Stroke="#2A1709" StrokeThickness="3" StrokeLineCap="Round" Opacity="0.82" />
+                                                <Ellipse Canvas.Left="235" Canvas.Top="31" Width="44" Height="44" Fill="{StaticResource CardAltBrush}" Stroke="{StaticResource CopperBrush}" StrokeThickness="1.5" />
+                                                <Path Data="M179,150 L191,162 L177,168 Z" Fill="{StaticResource AmberBrush}" Opacity="0.9" />
+                                            </Canvas>
+                                        </Grid>
+
+                                        <StackPanel Grid.Column="1" Spacing="14" VerticalAlignment="Center" Margin="18,0,0,0">
+                                            <TextBlock Text="{Binding [turntable.title], Source={x:Static loc:Localization.Instance}}" Classes="title" />
+                                            <TextBlock Text="{Binding [turntable.desc], Source={x:Static loc:Localization.Instance}}" Classes="caption" TextWrapping="Wrap" />
+                                            <Border Classes="metric">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding [nowplaying.label], Source={x:Static loc:Localization.Instance}}" Classes="caption" />
+                                                        <TextBlock Text="{Binding NowPlayingTitle}" Classes="heading" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding NowPlayingArtist}" Classes="caption" TextTrimming="CharacterEllipsis"
+                                                                   IsVisible="{Binding NowPlayingArtist, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                                        <Button Classes="media" Content="⏮" Command="{Binding PrevCommand}" ToolTip.Tip="{Binding [media.prev], Source={x:Static loc:Localization.Instance}}" />
+                                                        <Button Classes="mediaPrimary" Content="{Binding IsPlaying, Converter={StaticResource BoolToPlayPauseConverter}}" Command="{Binding PlayPauseCommand}" ToolTip.Tip="{Binding [media.playpause], Source={x:Static loc:Localization.Instance}}" />
+                                                        <Button Classes="media" Content="⏭" Command="{Binding NextCommand}" ToolTip.Tip="{Binding [media.next], Source={x:Static loc:Localization.Instance}}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                            <TextBlock Classes="mono" TextWrapping="Wrap">
+                                                <Run Text="{Binding [nowplaying.from], Source={x:Static loc:Localization.Instance}}" Foreground="{StaticResource FaintBrush}" />
+                                                <Run Text="{Binding NowPlayingSource}" Foreground="{StaticResource GoldBrush}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <Border Classes="card">
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Border Background="{StaticResource GoldGradientBrush}" CornerRadius="9" Width="18" Height="18" VerticalAlignment="Center">
+                                                <TextBlock Text="1" Foreground="#170E08" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                                <TextBlock Text="{Binding [flow.wave.title], Source={x:Static loc:Localization.Instance}}" Classes="heading" />
+                                                <TextBlock Text="{Binding [flow.wave.desc], Source={x:Static loc:Localization.Instance}}" Classes="caption" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="live" Classes="mono" Foreground="{StaticResource GreenBrush}" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8" Height="190" ClipToBounds="True">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                                    <GradientStop Color="#1C0F06" Offset="0" />
+                                                    <GradientStop Color="#0E0703" Offset="0.5" />
+                                                    <GradientStop Color="#1C0F06" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                            <Viewbox Stretch="Fill">
+                                                <Canvas Width="720" Height="150">
+                                                    <!-- baseline + faint guide rails -->
+                                                    <Path Data="M46,40 L674,40 M46,110 L674,110" Stroke="{StaticResource LineBrush}" StrokeThickness="0.6" Opacity="0.35" />
+                                                    <Path Data="M46,75 L674,75" Stroke="{StaticResource LineBrush}" StrokeThickness="1" Opacity="0.6" />
+                                                    <!-- symmetric envelope fill, brightest at center -->
+                                                    <Path Data="{Binding WaveformFillPathData}">
+                                                        <Path.Fill>
+                                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                                                <GradientStop Color="#33FFD98A" Offset="0" />
+                                                                <GradientStop Color="#66EBC16A" Offset="0.5" />
+                                                                <GradientStop Color="#33FFD98A" Offset="1" />
+                                                            </LinearGradientBrush>
+                                                        </Path.Fill>
+                                                    </Path>
+                                                    <!-- bright crest line tracing the top edge -->
+                                                    <Path Data="{Binding WaveformPathData}" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" Fill="Transparent" />
+                                                </Canvas>
+                                            </Viewbox>
+                                        </Border>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="Trục ngang: thời gian → · Trục dọc: biên độ (độ to)" Classes="caption" Foreground="{StaticResource FaintBrush}" />
+                                            <TextBlock Grid.Column="1" Text="đường vàng = đỉnh sóng" Classes="caption" Foreground="{StaticResource FaintBrush}" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Text="▼ áp bộ lọc EQ" Classes="mono" Foreground="{StaticResource AmberBrush}" HorizontalAlignment="Center" Margin="0,-2,0,-2" />
+
+                                <Border Classes="card">
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Border Background="{StaticResource GoldGradientBrush}" CornerRadius="9" Width="18" Height="18" VerticalAlignment="Center">
+                                                <TextBlock Text="2" Foreground="#170E08" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                                <TextBlock Text="Bộ lọc · Đường EQ" Classes="heading" />
+                                                <TextBlock Text="Mức tăng/giảm theo tần số mà AutoEQ áp vào" Classes="caption" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="±6 dB" Classes="mono" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Border Background="#150B05" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8" Height="170" ClipToBounds="True">
+                                            <Viewbox Stretch="Fill">
+                                                <Canvas Width="340" Height="120">
+                                                    <Path Data="M0,60 L340,60" Stroke="{StaticResource LineBrush}" StrokeThickness="1" />
+                                                    <Path Data="M0,30 L340,30 M0,90 L340,90" Stroke="{StaticResource LineBrush}" StrokeThickness="0.6" Opacity="0.5" />
+                                                    <Path Data="{Binding EqCurvePathData}" Stroke="{StaticResource AmberBrush}" StrokeThickness="3" StrokeLineCap="Round" Fill="Transparent" />
+                                                </Canvas>
+                                            </Viewbox>
+                                        </Border>
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <TextBlock Text="20 Hz" Classes="caption" Foreground="{StaticResource FaintBrush}" />
+                                            <TextBlock Grid.Column="1" Text="trên vạch giữa = tăng (boost) · dưới = giảm (cut)" Classes="caption" Foreground="{StaticResource FaintBrush}" HorizontalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="20 kHz" Classes="caption" Foreground="{StaticResource FaintBrush}" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Text="▼ kết quả sau xử lý" Classes="mono" Foreground="{StaticResource AmberBrush}" HorizontalAlignment="Center" Margin="0,-2,0,-2" />
+
+                                <Border Classes="card">
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Border Background="{StaticResource GoldGradientBrush}" CornerRadius="9" Width="18" Height="18" VerticalAlignment="Center">
+                                                <TextBlock Text="3" Foreground="#170E08" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                                <TextBlock Text="Âm ra · Phổ 7 dải" Classes="heading" />
+                                                <TextBlock Text="Năng lượng từng dải tần của âm thanh nghe được" Classes="caption" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="RTA" Classes="mono" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Grid ColumnDefinitions="88,*,52" Margin="0,0,0,2">
+                                            <TextBlock Text="Dải tần" Classes="caption" Foreground="{StaticResource FaintBrush}" />
+                                            <TextBlock Grid.Column="1" Text="thanh dài = dải đó càng mạnh" Classes="caption" Foreground="{StaticResource FaintBrush}" HorizontalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="Khoảng" Classes="caption" Foreground="{StaticResource FaintBrush}" TextAlignment="Right" />
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding Bands}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ColumnDefinitions="88,*,52" Margin="0,4">
+                                                        <TextBlock Text="{Binding Name}" Classes="mono" VerticalAlignment="Center" />
+                                                        <ProgressBar Grid.Column="1" Value="{Binding Value}" Maximum="1" Height="9" VerticalAlignment="Center" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding Description}" Classes="caption" TextAlignment="Right" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <Border Grid.Column="2" Classes="board">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="4,0,4,12">
+                            <TextBlock Text="BẢNG GIÁM SÁT" Classes="heading" />
+                            <TextBlock Grid.Column="1" Text="METERS" Classes="mono" Foreground="{StaticResource AmberBrush}" />
+                        </Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="14">
+                                <UniformGrid Columns="2" Rows="2">
+                                    <Border Classes="metric" Margin="0,0,7,7">
+                                        <StackPanel>
+                                            <TextBlock Text="RMS" Classes="caption" />
+                                            <TextBlock Text="{Binding Rms, StringFormat={}{0:0.000}}" Classes="title" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Classes="metric" Margin="7,0,0,7">
+                                        <StackPanel>
+                                            <TextBlock Text="Crest" Classes="caption" />
+                                            <TextBlock Text="{Binding CrestDb, StringFormat={}{0:0.0} dB}" Classes="title" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Classes="metric" Margin="0,7,7,0">
+                                        <StackPanel>
+                                            <TextBlock Text="Energy" Classes="caption" />
+                                            <TextBlock Text="{Binding EnergyPercent, StringFormat={}{0}%}" Foreground="{StaticResource GreenBrush}" Classes="title" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Classes="metric" Margin="7,7,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="Brightness" Classes="caption" />
+                                            <TextBlock Text="{Binding BrightnessPercent, StringFormat={}{0}%}" Foreground="{StaticResource AmberBrush}" Classes="title" />
+                                        </StackPanel>
+                                    </Border>
+                                </UniformGrid>
+
+                                <Border Classes="card">
+                                    <StackPanel Spacing="14">
+                                        <TextBlock Text="Cân bằng âm" Classes="heading" />
+
+                                        <StackPanel Spacing="6">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="Bass" Classes="caption" VerticalAlignment="Bottom" />
+                                                <TextBlock Grid.Column="1" Text="{Binding BassLevel, StringFormat={}{0:0}%}" Foreground="{StaticResource AmberBrush}" FontSize="18" FontWeight="SemiBold" />
+                                            </Grid>
+                                            <ProgressBar Value="{Binding BassLevel}" Maximum="100" Height="12" CornerRadius="6" Foreground="{StaticResource BassFillBrush}" Background="#160C06" />
+                                        </StackPanel>
+
+                                        <StackPanel Spacing="6">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="Vocal / Mid" Classes="caption" VerticalAlignment="Bottom" />
+                                                <TextBlock Grid.Column="1" Text="{Binding VocalLevel, StringFormat={}{0:0}%}" Foreground="{StaticResource GoldBrush}" FontSize="18" FontWeight="SemiBold" />
+                                            </Grid>
+                                            <ProgressBar Value="{Binding VocalLevel}" Maximum="100" Height="12" CornerRadius="6" Foreground="{StaticResource VocalFillBrush}" Background="#160C06" />
+                                        </StackPanel>
+
+                                        <StackPanel Spacing="6">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="Treble" Classes="caption" VerticalAlignment="Bottom" />
+                                                <TextBlock Grid.Column="1" Text="{Binding TrebleLevel, StringFormat={}{0:0}%}" Foreground="#FFF3D6" FontSize="18" FontWeight="SemiBold" />
+                                            </Grid>
+                                            <ProgressBar Value="{Binding TrebleLevel}" Maximum="100" Height="12" CornerRadius="6" Foreground="{StaticResource TrebleFillBrush}" Background="#160C06" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Classes="card">
+                                    <StackPanel Spacing="14">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="Điều chỉnh AutoEQ" Classes="heading" />
+                                            <TextBlock Grid.Column="1" Text="boost ↑ · cut ↓" Classes="mono" Foreground="{StaticResource FaintBrush}" VerticalAlignment="Center" />
+                                        </Grid>
+
+                                        <UniformGrid Columns="3">
+                                            <!-- Bass fader -->
+                                            <StackPanel Spacing="10" HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding AdjustBassDb, Converter={StaticResource DbTextConverter}}" Classes="mono" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" />
+                                                <Canvas Width="40" Height="140">
+                                                    <Border Canvas.Left="16" Width="8" Height="140" CornerRadius="4" Background="#160C06" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" />
+                                                    <Border Canvas.Left="16" Width="8" CornerRadius="4"
+                                                            Canvas.Top="{Binding AdjustBassDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=fillTop}"
+                                                            Height="{Binding AdjustBassDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=fillHeight}"
+                                                            Background="{Binding AdjustBassDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=sign}" />
+                                                    <Border Canvas.Left="8" Canvas.Top="69" Width="24" Height="2" Background="{StaticResource AmberBrush}" Opacity="0.65" />
+                                                    <Border Canvas.Left="9" Width="22" Height="22" CornerRadius="11" Background="{StaticResource CardAltBrush}" BorderBrush="{StaticResource GoldBrush}" BorderThickness="2"
+                                                            Canvas.Top="{Binding AdjustBassDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=thumbTop}">
+                                                        <Border Width="10" Height="2" CornerRadius="1" Background="{StaticResource GoldBrush}" Opacity="0.8" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                </Canvas>
+                                                <TextBlock Text="Bass" Classes="caption" HorizontalAlignment="Center" />
+                                            </StackPanel>
+
+                                            <!-- Vocal fader -->
+                                            <StackPanel Spacing="10" HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding AdjustVocalDb, Converter={StaticResource DbTextConverter}}" Classes="mono" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" />
+                                                <Canvas Width="40" Height="140">
+                                                    <Border Canvas.Left="16" Width="8" Height="140" CornerRadius="4" Background="#160C06" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" />
+                                                    <Border Canvas.Left="16" Width="8" CornerRadius="4"
+                                                            Canvas.Top="{Binding AdjustVocalDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=fillTop}"
+                                                            Height="{Binding AdjustVocalDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=fillHeight}"
+                                                            Background="{Binding AdjustVocalDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=sign}" />
+                                                    <Border Canvas.Left="8" Canvas.Top="69" Width="24" Height="2" Background="{StaticResource AmberBrush}" Opacity="0.65" />
+                                                    <Border Canvas.Left="9" Width="22" Height="22" CornerRadius="11" Background="{StaticResource CardAltBrush}" BorderBrush="{StaticResource GoldBrush}" BorderThickness="2"
+                                                            Canvas.Top="{Binding AdjustVocalDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=thumbTop}">
+                                                        <Border Width="10" Height="2" CornerRadius="1" Background="{StaticResource GoldBrush}" Opacity="0.8" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                </Canvas>
+                                                <TextBlock Text="Vocal" Classes="caption" HorizontalAlignment="Center" />
+                                            </StackPanel>
+
+                                            <!-- Treble fader -->
+                                            <StackPanel Spacing="10" HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding AdjustTrebleDb, Converter={StaticResource DbTextConverter}}" Classes="mono" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" />
+                                                <Canvas Width="40" Height="140">
+                                                    <Border Canvas.Left="16" Width="8" Height="140" CornerRadius="4" Background="#160C06" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" />
+                                                    <Border Canvas.Left="16" Width="8" CornerRadius="4"
+                                                            Canvas.Top="{Binding AdjustTrebleDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=fillTop}"
+                                                            Height="{Binding AdjustTrebleDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=fillHeight}"
+                                                            Background="{Binding AdjustTrebleDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=sign}" />
+                                                    <Border Canvas.Left="8" Canvas.Top="69" Width="24" Height="2" Background="{StaticResource AmberBrush}" Opacity="0.65" />
+                                                    <Border Canvas.Left="9" Width="22" Height="22" CornerRadius="11" Background="{StaticResource CardAltBrush}" BorderBrush="{StaticResource GoldBrush}" BorderThickness="2"
+                                                            Canvas.Top="{Binding AdjustTrebleDb, Converter={StaticResource DbFaderConverter}, ConverterParameter=thumbTop}">
+                                                        <Border Width="10" Height="2" CornerRadius="1" Background="{StaticResource GoldBrush}" Opacity="0.8" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                </Canvas>
+                                                <TextBlock Text="Treble" Classes="caption" HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Classes="card" MinHeight="260">
+                                    <DockPanel>
+                                        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                                            <TextBlock Text="Nhật ký hoạt động" Classes="heading" />
+                                            <TextBlock Grid.Column="1" Text="live" Classes="mono" />
+                                        </Grid>
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="320">
+                                            <ItemsControl ItemsSource="{Binding SignalLog}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="0,7">
+                                                            <Grid ColumnDefinitions="62,58,*">
+                                                                <TextBlock Text="{Binding TimeText}" Classes="mono" Foreground="{StaticResource FaintBrush}" />
+                                                                <TextBlock Grid.Column="1" Text="{Binding Level}" Classes="mono" Foreground="{StaticResource AmberBrush}" />
+                                                                <TextBlock Grid.Column="2" Text="{Binding DisplayMessage}" TextWrapping="Wrap" Classes="mono" />
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </DockPanel>
+                                </Border>
+
+                                <Border Classes="card">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="Thiết bị" Classes="heading" />
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="MAINBOARD" Classes="mono" Foreground="{StaticResource FaintBrush}" />
+                                            <TextBlock Text="{Binding MainboardName}" Foreground="#F1E2C6" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="SOUND CARD" Classes="mono" Foreground="{StaticResource FaintBrush}" />
+                                            <TextBlock Text="{Binding SoundCardName}" Foreground="#F1E2C6" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+</Window>

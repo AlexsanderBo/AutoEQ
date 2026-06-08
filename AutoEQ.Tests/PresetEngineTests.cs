@@ -123,6 +123,114 @@ public sealed class PresetEngineTests
         Assert.Equal(a.EqualizerApoText, b.EqualizerApoText);
     }
 
+    [Fact]
+    public void BuildDynamicAutoEqPreset_LeavesPreampAtUnity()
+    {
+        var engine = new PresetEngine();
+        EqPreset preset = engine.BuildDynamicAutoEqPreset(StableFeatures(), TestProfile, nearWallMode: false, nightMode: false, fastAttack: true);
+
+        Assert.StartsWith("Preamp: 0 dB", preset.EqualizerApoText);
+    }
+
+    [Fact]
+    public void BuildNativeAutoEqPreset_LeavesPreampAtUnity()
+    {
+        var engine = new PresetEngine();
+        EqPreset preset = engine.BuildNativeAutoEqPreset(new NativeAutoEqSnapshot
+        {
+            EqGainsDb = [2.0, -1.0],
+            BandCentersHz = [1000, 6000],
+            TruePeakDb = 0.5
+        }, TestProfile, nearWallMode: false, nightMode: false);
+
+        Assert.StartsWith("Preamp: 0 dB", preset.EqualizerApoText);
+    }
+
+    // --- EvaluateDynamicAutoEq: cổng quyết định ghi EQ động (logic nối vào OnFeatures) ---
+
+    private static AudioFeatures StableFeatures(string state = "Balanced", double confidence = 0.9) => new()
+    {
+        Rms = 0.09,
+        Confidence = confidence,
+        SubBass = 0.22,
+        Bass = 0.24,
+        LowMid = 0.18,
+        Mid = 0.21,
+        Presence = 0.24,
+        Treble = 0.18,
+        Air = 0.14,
+        State = state
+    };
+
+    // Đẩy đủ frame cùng state để vào cửa sổ ổn định rồi trả quyết định lần cuối.
+    private static PresetEngine.PresetDecision FeedStable(PresetEngine engine, AudioFeatures features, int times)
+    {
+        PresetEngine.PresetDecision decision = new();
+        for (int i = 0; i < times; i++)
+            decision = engine.EvaluateDynamicAutoEq(features, TestProfile, autoEqEnabled: true, nearWallMode: false, nightMode: false);
+        return decision;
+    }
+
+    [Fact]
+    public void EvaluateDynamicAutoEq_Disabled_NoSwitch()
+    {
+        var engine = new PresetEngine();
+        PresetEngine.PresetDecision decision = engine.EvaluateDynamicAutoEq(
+            StableFeatures(), TestProfile, autoEqEnabled: false, nearWallMode: false, nightMode: false);
+
+        Assert.False(decision.ShouldSwitch);
+        Assert.Null(decision.RequestedPreset);
+    }
+
+    [Fact]
+    public void EvaluateDynamicAutoEq_UnstableState_WaitsBeforeWriting()
+    {
+        var engine = new PresetEngine();
+        // Chỉ 3 frame (< RequiredStableDetections=4) -> chưa ổn định.
+        PresetEngine.PresetDecision decision = FeedStable(engine, StableFeatures(), times: 3);
+
+        Assert.False(decision.ShouldSwitch);
+        Assert.Null(decision.RequestedPreset);
+    }
+
+    [Fact]
+    public void EvaluateDynamicAutoEq_LowConfidence_KeepsCurve()
+    {
+        var engine = new PresetEngine();
+        PresetEngine.PresetDecision decision = FeedStable(engine, StableFeatures(confidence: 0.2), times: 5);
+
+        Assert.False(decision.ShouldSwitch);
+        Assert.Null(decision.RequestedPreset);
+    }
+
+    [Fact]
+    public void EvaluateDynamicAutoEq_StableHighConfidence_WritesFirstCurve()
+    {
+        var engine = new PresetEngine();
+        PresetEngine.PresetDecision decision = FeedStable(engine, StableFeatures(), times: 5);
+
+        Assert.True(decision.ShouldSwitch);
+        Assert.NotNull(decision.RequestedPreset);
+        Assert.False(string.IsNullOrWhiteSpace(decision.RequestedPreset!.EqualizerApoText));
+    }
+
+    [Fact]
+    public void EvaluateDynamicAutoEq_RepeatedIdenticalCurve_SkipsRedundantWrite()
+    {
+        var engine = new PresetEngine();
+        AudioFeatures features = StableFeatures();
+
+        PresetEngine.PresetDecision first = FeedStable(engine, features, times: 5);
+        Assert.True(first.ShouldSwitch);
+
+        // Feed lại đúng features y hệt -> curve trùng -> không ghi đè dư thừa.
+        PresetEngine.PresetDecision second = engine.EvaluateDynamicAutoEq(
+            features, TestProfile, autoEqEnabled: true, nearWallMode: false, nightMode: false);
+
+        Assert.False(second.ShouldSwitch);
+        Assert.Null(second.RequestedPreset);
+    }
+
     private static double SumAbsGains(EqPreset preset)
         => ParseGains(preset.EqualizerApoText).Values.Sum(Math.Abs);
 

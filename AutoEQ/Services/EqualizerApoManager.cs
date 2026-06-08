@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using AutoEQ.Config;
 using AutoEQ.Models;
 
@@ -10,21 +11,26 @@ public interface IEqualizerApoManager
     bool IsInstalled();
     Task EnsureIncludeLineAsync();
     Task WriteAutoEQConfigAsync(string text, EqPreset? preset = null, string? reason = null);
+    Task WriteDeviceScopedConfigAsync(string deviceKey, string apoPattern, string text, EqPreset? preset = null, string? reason = null);
     bool IsLikelyInstalledOnCurrentDevice(AudioOutputInfo? outputInfo);
     Task ApplyPresetAsync(EqPreset preset, string? reason = null);
+    Task ApplyPresetAsync(EqPreset preset, AudioOutputInfo? outputInfo, string? reason = null);
     void OpenConfigFolder();
 }
 
 public sealed class EqualizerApoManager : IEqualizerApoManager
 {
     private readonly IAutoEqConfig _config;
+    private readonly IDeviceEqStore _deviceEqStore;
+    private readonly IAppLogger? _logger;
 
     private const string IncludeLine = "Include: AutoEQ_autoeq.txt";
-    private const double SafeTruePeakCeilingDb = -1.0;
 
-    public EqualizerApoManager(IAutoEqConfig? config = null)
+    public EqualizerApoManager(IAutoEqConfig? config = null, IDeviceEqStore? deviceEqStore = null, IAppLogger? logger = null)
     {
         _config = config ?? new AutoEqConfig();
+        _logger = logger;
+        _deviceEqStore = deviceEqStore ?? new DeviceEqStore(logger);
     }
 
     public bool IsInstalled() => Directory.Exists(_config.EqualizerApoConfigDir);
@@ -53,17 +59,19 @@ public sealed class EqualizerApoManager : IEqualizerApoManager
     }
 
     public async Task WriteAutoEQConfigAsync(string text, EqPreset? preset = null, string? reason = null)
+        => await WriteDeviceScopedConfigAsync("global", string.Empty, text, preset, reason).ConfigureAwait(false);
+
+    public async Task WriteDeviceScopedConfigAsync(string deviceKey, string apoPattern, string text, EqPreset? preset = null, string? reason = null)
     {
         if (!Directory.Exists(_config.EqualizerApoConfigDir))
         {
             throw new DirectoryNotFoundException($"Equalizer APO config folder not found: {_config.EqualizerApoConfigDir}");
         }
 
-        string safeText = AddLimiterGuard(text, preset?.TruePeakDb, out string limiterReason);
-        string? mergedReason = string.IsNullOrWhiteSpace(limiterReason)
-            ? reason
-            : string.IsNullOrWhiteSpace(reason) ? limiterReason : $"{reason}; {limiterReason}";
-        string body = BuildConfigBody(safeText, preset, mergedReason);
+        string scopedText = EnsureDeviceScope(text, apoPattern);
+        string block = BuildBlockBody(scopedText, preset, reason);
+        _deviceEqStore.Upsert(deviceKey, apoPattern, block, preset?.Name ?? string.Empty, preset?.TruePeakDb);
+        string body = BuildConfigBody(_deviceEqStore.GetAll());
         string tempPath = _config.AutoEqEqFile + ".tmp";
         await File.WriteAllTextAsync(tempPath, body);
 
@@ -77,52 +85,13 @@ public sealed class EqualizerApoManager : IEqualizerApoManager
         }
     }
 
-    private static string AddLimiterGuard(string text, double? truePeakDb, out string reason)
+    private static string EnsureDeviceScope(string text, string apoPattern)
     {
-        double preampDb = 0;
-        double positiveBoostDb = 0;
-        foreach (string rawLine in text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
-        {
-            string line = rawLine.Trim();
-            if (line.StartsWith("Preamp:", StringComparison.OrdinalIgnoreCase))
-            {
-                preampDb = TryParseFirstDb(line, preampDb);
-            }
-            else if (line.StartsWith("Filter:", StringComparison.OrdinalIgnoreCase) && line.Contains(" Gain ", StringComparison.OrdinalIgnoreCase))
-            {
-                double gain = TryParseGainDb(line);
-                if (gain > 0) positiveBoostDb += gain * 0.35;
-            }
-        }
-
-        double estimatedPeakDb = truePeakDb.HasValue
-            ? preampDb + truePeakDb.Value
-            : preampDb + positiveBoostDb;
-        if (estimatedPeakDb <= SafeTruePeakCeilingDb)
-        {
-            reason = string.Empty;
-            return text;
-        }
-
-        double extraHeadroomDb = estimatedPeakDb - SafeTruePeakCeilingDb;
-        string peakSource = truePeakDb.HasValue ? "true peak" : "estimated peak";
-        reason = $"Limiter guard added {extraHeadroomDb:0.##} dB headroom; {peakSource} {estimatedPeakDb:0.##} dBFS.";
-        string adjustedText = AdjustFirstPreamp(text, preampDb - extraHeadroomDb);
-        return $"# Safety limiter guard: {peakSource} {estimatedPeakDb:0.##} dBFS, ceiling {SafeTruePeakCeilingDb:0.##} dBFS{Environment.NewLine}" + adjustedText;
-    }
-
-    private static string AdjustFirstPreamp(string text, double adjustedPreampDb)
-    {
-        string[] lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        for (int i = 0; i < lines.Length; i++)
-        {
-            if (!lines[i].TrimStart().StartsWith("Preamp:", StringComparison.OrdinalIgnoreCase)) continue;
-
-            lines[i] = $"Preamp: {adjustedPreampDb:0.##} dB";
-            return string.Join(Environment.NewLine, lines);
-        }
-
-        return $"Preamp: {adjustedPreampDb:0.##} dB{Environment.NewLine}" + text;
+        string trimmed = text.Trim();
+        bool hasDevice = trimmed.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+            .Any(line => line.TrimStart().StartsWith("Device:", StringComparison.OrdinalIgnoreCase));
+        if (hasDevice || string.IsNullOrWhiteSpace(apoPattern)) return trimmed;
+        return $"Device: {apoPattern.Trim()}{Environment.NewLine}" + trimmed;
     }
 
     public bool IsLikelyInstalledOnCurrentDevice(AudioOutputInfo? outputInfo)
@@ -133,41 +102,50 @@ public sealed class EqualizerApoManager : IEqualizerApoManager
                File.Exists(_config.EqualizerApoMainConfig);
     }
 
-    private static double TryParseFirstDb(string line, double fallback)
-    {
-        string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        foreach (string part in parts)
-        {
-            if (double.TryParse(part, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double value)) return value;
-        }
-        return fallback;
-    }
-
-    private static double TryParseGainDb(string line)
-    {
-        string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        for (int i = 0; i < parts.Length - 1; i++)
-        {
-            if (string.Equals(parts[i], "Gain", StringComparison.OrdinalIgnoreCase) &&
-                double.TryParse(parts[i + 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double value))
-            {
-                return value;
-            }
-        }
-        return 0;
-    }
-
     public async Task ApplyPresetAsync(EqPreset preset, string? reason = null)
+        => await ApplyPresetAsync(preset, null, reason).ConfigureAwait(false);
+
+    public async Task ApplyPresetAsync(EqPreset preset, AudioOutputInfo? outputInfo, string? reason = null)
     {
         try
         {
             await EnsureIncludeLineAsync();
-            await WriteAutoEQConfigAsync(preset.EqualizerApoText, preset, reason);
+            DeviceEqTarget target = ResolveDeviceEqTarget(outputInfo);
+            await WriteDeviceScopedConfigAsync(target.DeviceKey, target.ApoPattern, preset.EqualizerApoText, preset, reason).ConfigureAwait(false);
         }
         catch (UnauthorizedAccessException ex)
         {
             throw new InvalidOperationException("Please run AutoEQ as Administrator once to connect with Equalizer APO.", ex);
         }
+    }
+
+    internal DeviceEqTarget ResolveDeviceEqTarget(AudioOutputInfo? outputInfo)
+    {
+        if (!string.IsNullOrWhiteSpace(outputInfo?.DefaultDeviceId))
+        {
+            string id = outputInfo.DefaultDeviceId.Trim();
+            return new DeviceEqTarget(id, id);
+        }
+
+        if (!string.IsNullOrWhiteSpace(outputInfo?.DefaultDeviceName))
+        {
+            string token = NormalizeDeviceNameToken(outputInfo.DefaultDeviceName);
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                _logger?.Error($"Equalizer APO Device fallback: DefaultDeviceId missing; using normalized device name token '{token}'. Endpoint ID matching is safer.");
+                return new DeviceEqTarget($"name:{token}", token);
+            }
+        }
+
+        _logger?.Error("Equalizer APO Device fallback: DefaultDeviceId missing and no reliable name token; writing global EQ block.");
+        return new DeviceEqTarget("global", string.Empty);
+    }
+
+    private static string NormalizeDeviceNameToken(string name)
+    {
+        string token = Regex.Replace(name, @"^Default\s*\([^)]*\)\s*", string.Empty, RegexOptions.IgnoreCase).Trim();
+        token = Regex.Replace(token, @"\s+", " ").Trim();
+        return token.Length >= 3 ? token : string.Empty;
     }
 
     public void OpenConfigFolder()
@@ -184,13 +162,9 @@ public sealed class EqualizerApoManager : IEqualizerApoManager
         });
     }
 
-    private static string BuildConfigBody(string text, EqPreset? preset, string? reason)
+    private static string BuildBlockBody(string text, EqPreset? preset, string? reason)
     {
-        var lines = new List<string>
-        {
-            "# Generated by AutoEQ. Safe to overwrite.",
-            $"# Updated: {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}",
-        };
+        var lines = new List<string>();
 
         if (preset is not null)
         {
@@ -205,6 +179,25 @@ public sealed class EqualizerApoManager : IEqualizerApoManager
 
         lines.Add(string.Empty);
         lines.Add(text.Trim());
-        return string.Join("\r\n", lines) + "\r\n";
+        return string.Join("\r\n", lines.Where((line, index) => index < lines.Count - 1 || line.Length > 0)).Trim() + "\r\n";
     }
+
+    private static string BuildConfigBody(IReadOnlyList<DeviceEqRecord> records)
+    {
+        var lines = new List<string>
+        {
+            "# Generated by AutoEQ. Safe to overwrite.",
+            $"# Updated: {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}",
+            string.Empty
+        };
+
+        foreach (string text in records.Select(record => record.EqText.Trim()).Where(text => !string.IsNullOrWhiteSpace(text)))
+        {
+            if (lines.Count > 3) lines.Add(string.Empty);
+            lines.Add(text);
+        }
+        return string.Join("\r\n", lines).TrimEnd() + "\r\n";
+    }
+
+    internal readonly record struct DeviceEqTarget(string DeviceKey, string ApoPattern);
 }

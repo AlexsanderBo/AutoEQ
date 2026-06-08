@@ -7,6 +7,7 @@ public interface IPresetApplyService : IDisposable
 {
     string LastAppliedPresetName { get; }
     Task<AutoEqResult> ApplyAsync(EqPreset preset, string reason, CancellationToken cancellationToken = default);
+    Task<AutoEqResult> ApplyAsync(EqPreset preset, AudioOutputInfo? outputInfo, string reason, CancellationToken cancellationToken = default);
 }
 
 public sealed class PresetApplyService : IPresetApplyService
@@ -15,8 +16,11 @@ public sealed class PresetApplyService : IPresetApplyService
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private string _lastAppliedPresetText = string.Empty;
     private CancellationTokenSource? _smoothPresetApplyCts;
-    private const int SmoothApplySteps = 14;
-    private const int SmoothApplyStepDelayMs = 300;
+    private const int MinSmoothApplySteps = 4;
+    private const int MaxSmoothApplySteps = 18;
+    private const int SmoothApplyStepDelayMs = 220;
+    private const double TinyEqDeltaDb = 0.18;
+    private const double TargetStepDeltaDb = 0.10;
 
     public PresetApplyService(IEqualizerApoManager apoManager)
     {
@@ -26,6 +30,9 @@ public sealed class PresetApplyService : IPresetApplyService
     public string LastAppliedPresetName { get; private set; } = string.Empty;
 
     public async Task<AutoEqResult> ApplyAsync(EqPreset preset, string reason, CancellationToken cancellationToken = default)
+        => await ApplyAsync(preset, null, reason, cancellationToken).ConfigureAwait(false);
+
+    public async Task<AutoEqResult> ApplyAsync(EqPreset preset, AudioOutputInfo? outputInfo, string reason, CancellationToken cancellationToken = default)
     {
         if (!preset.IsDynamic && string.Equals(LastAppliedPresetName, preset.Name, StringComparison.OrdinalIgnoreCase))
         {
@@ -41,15 +48,7 @@ public sealed class PresetApplyService : IPresetApplyService
                 return AutoEqResult.Ok("Preset already applied.");
             }
 
-            if (!string.IsNullOrWhiteSpace(_lastAppliedPresetText))
-            {
-                await ApplyPresetSmoothlyAsync(preset, reason, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                _smoothPresetApplyCts?.Cancel();
-                await _apoManager.ApplyPresetAsync(preset, reason).ConfigureAwait(false);
-            }
+            await ApplyPresetSmoothlyAsync(preset, outputInfo, reason, cancellationToken).ConfigureAwait(false);
 
             LastAppliedPresetName = preset.Name;
             _lastAppliedPresetText = preset.EqualizerApoText;
@@ -69,7 +68,7 @@ public sealed class PresetApplyService : IPresetApplyService
         }
     }
 
-    private async Task ApplyPresetSmoothlyAsync(EqPreset preset, string reason, CancellationToken cancellationToken)
+    private async Task ApplyPresetSmoothlyAsync(EqPreset preset, AudioOutputInfo? outputInfo, string reason, CancellationToken cancellationToken)
     {
         _smoothPresetApplyCts?.Cancel();
         _smoothPresetApplyCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -78,20 +77,28 @@ public sealed class PresetApplyService : IPresetApplyService
         EqCurve from = EqCurve.Parse(_lastAppliedPresetText);
         EqCurve to = EqCurve.Parse(preset.EqualizerApoText);
         await _apoManager.EnsureIncludeLineAsync().ConfigureAwait(false);
-        for (int step = 1; step <= SmoothApplySteps; step++)
+        double maxDeltaDb = EqCurve.MaxGainDeltaDb(from, to);
+        if (maxDeltaDb <= TinyEqDeltaDb)
+        {
+            await _apoManager.ApplyPresetAsync(preset, outputInfo, reason).ConfigureAwait(false);
+            return;
+        }
+
+        int smoothApplySteps = Math.Clamp((int)Math.Ceiling(maxDeltaDb / TargetStepDeltaDb), MinSmoothApplySteps, MaxSmoothApplySteps);
+        for (int step = 1; step <= smoothApplySteps; step++)
         {
             linkedToken.ThrowIfCancellationRequested();
-            double t = SmootherStep(step / (double)SmoothApplySteps);
+            double t = SmootherStep(step / (double)smoothApplySteps);
             EqCurve curve = EqCurve.Interpolate(from, to, t);
             var stepPreset = new EqPreset
             {
-                Name = $"{preset.Name} ({step}/{SmoothApplySteps})",
+                Name = $"{preset.Name} ({step}/{smoothApplySteps})",
                 EqualizerApoText = curve.ToEqualizerApoText(),
                 IsDynamic = true
             };
 
-            await _apoManager.WriteAutoEQConfigAsync(stepPreset.EqualizerApoText, stepPreset, reason).ConfigureAwait(false);
-            if (step < SmoothApplySteps)
+            await _apoManager.ApplyPresetAsync(stepPreset, outputInfo, reason).ConfigureAwait(false);
+            if (step < smoothApplySteps)
             {
                 await Task.Delay(SmoothApplyStepDelayMs, linkedToken).ConfigureAwait(false);
             }
@@ -118,6 +125,8 @@ public sealed class PresetApplyService : IPresetApplyService
         public static EqCurve Parse(string text)
         {
             var curve = new EqCurve();
+            if (string.IsNullOrWhiteSpace(text)) return curve;
+
             Match preampMatch = PreampRegex.Match(text);
             if (preampMatch.Success)
             {
@@ -134,6 +143,19 @@ public sealed class PresetApplyService : IPresetApplyService
             }
 
             return curve;
+        }
+
+        public static double MaxGainDeltaDb(EqCurve from, EqCurve to)
+        {
+            double max = Math.Abs(to.Preamp - from.Preamp);
+            foreach (int frequency in from.Bands.Keys.Concat(to.Bands.Keys).Distinct())
+            {
+                double start = from.Bands.GetValueOrDefault(frequency)?.GainDb ?? 0;
+                double end = to.Bands.GetValueOrDefault(frequency)?.GainDb ?? 0;
+                max = Math.Max(max, Math.Abs(end - start));
+            }
+
+            return max;
         }
 
         public static EqCurve Interpolate(EqCurve from, EqCurve to, double t)

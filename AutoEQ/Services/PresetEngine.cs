@@ -11,10 +11,10 @@ public static class VoicingCoefficients
 {
     // --- Smoothing / movement limits ---
     public const double MaxFeedbackCompensationDb = 4.5;
-    public const double FirstDynamicSmoothing = 0.30;
-    public const double DynamicSmoothing = 0.12;
-    public const double MaxFirstDynamicStepDb = 0.55;
-    public const double MaxDynamicStepDb = 0.32;
+    public const double FirstDynamicSmoothing = 0.25;
+    public const double DynamicSmoothing = 0.10;
+    public const double MaxFirstDynamicStepDb = 0.45;
+    public const double MaxDynamicStepDb = 0.24;
     public const double MaxPresenceIncreaseStepDb = 0.16;
     public const double MaxTrebleIncreaseStepDb = 0.10;
     public const double MaxAirIncreaseStepDb = 0.12;
@@ -32,12 +32,8 @@ public static class VoicingCoefficients
     public const double HighLevelRmsFloor = 0.13;
     public const double HighLevelRmsRange = 0.12;
 
-    // --- Preamp safety headroom ---
-    public const double NightPreampDb = -6.0;
-    public const double PositiveBoostBudgetFactor = 0.35;
-    public const double DayPreampBaseDb = -3.5;
-    public const double DayPreampMaxBoostFactor = 0.65;
-    public const double DayPreampFloorDb = -7.5;
+    // --- Fixed gain: AutoEQ changes filters only, not output volume/headroom. ---
+    public const double FixedPreampDb = 0.0;
 }
 
 
@@ -47,12 +43,14 @@ public interface IPresetEngine
     EqPreset GetPreset(string name);
     string ChooseStartupPreset(AudioOutputInfo outputInfo, bool nearWallMode, bool nightMode);
     PresetEngine.PresetDecision EvaluatePresetDecision(AudioFeatures features, string currentPresetName, bool autoEqEnabled, bool nearWallMode, bool nightMode);
-    PresetEngine.PresetDecision EvaluateDynamicAutoEq(AudioFeatures features, OutputAudioProfile outputProfile, bool autoEqEnabled, bool nearWallMode, bool nightMode);
+    PresetEngine.PresetDecision EvaluateDynamicAutoEq(AudioFeatures features, OutputAudioProfile outputProfile, bool autoEqEnabled, bool nearWallMode, bool nightMode, bool loudnessComp = true);
     void ResetDecisionWindow();
-    EqPreset BuildDynamicAutoEqPreset(AudioFeatures features, OutputAudioProfile outputProfile, bool nearWallMode, bool nightMode, bool fastAttack = false);
-    EqPreset BuildNativeAutoEqPreset(NativeAutoEqSnapshot snapshot, OutputAudioProfile outputProfile, bool nearWallMode, bool nightMode, bool fuseWithAutoEQBase = true);
+    EqPreset BuildDynamicAutoEqPreset(AudioFeatures features, OutputAudioProfile outputProfile, bool nearWallMode, bool nightMode, bool fastAttack = false, bool loudnessComp = true);
+    EqPreset BuildNativeAutoEqPreset(NativeAutoEqSnapshot snapshot, OutputAudioProfile outputProfile, bool nearWallMode, bool nightMode, bool fuseWithAutoEQBase = true, bool loudnessComp = true);
+
     void RememberAppliedCurve(EqPreset preset);
     void RememberNativeAppliedCurve(EqPreset preset);
+    double[] GetLastDynamicGains();
 }
 
 public sealed class PresetEngine : IPresetEngine
@@ -181,8 +179,10 @@ public sealed class PresetEngine : IPresetEngine
         OutputAudioProfile outputProfile,
         bool autoEqEnabled,
         bool nearWallMode,
-        bool nightMode)
+        bool nightMode,
+        bool loudnessComp = true)
     {
+
         lock (_gate)
         {
         TrackRecentState(features.State);
@@ -220,8 +220,9 @@ public sealed class PresetEngine : IPresetEngine
             };
         }
 
-        EqPreset preset = BuildDynamicAutoEqPreset(features, outputProfile, nearWallMode, nightMode, firstWrite);
+        EqPreset preset = BuildDynamicAutoEqPreset(features, outputProfile, nearWallMode, nightMode, firstWrite, loudnessComp);
         if (!firstWrite && string.Equals(preset.EqualizerApoText, _lastDynamicEqText, StringComparison.Ordinal))
+
         {
             return new PresetDecision
             {
@@ -303,13 +304,22 @@ public sealed class PresetEngine : IPresetEngine
 
     public void ResetDecisionWindow() => _recentStates.Clear();
 
-    public EqPreset BuildDynamicAutoEqPreset(AudioFeatures features, OutputAudioProfile outputProfile, bool nearWallMode, bool nightMode, bool fastAttack = false)
+    public double[] GetLastDynamicGains()
+    {
+        lock (_gate)
+        {
+            return _smoothedDynamicGains.ToArray();
+        }
+    }
+
+    public EqPreset BuildDynamicAutoEqPreset(AudioFeatures features, OutputAudioProfile outputProfile, bool nearWallMode, bool nightMode, bool fastAttack = false, bool loudnessComp = true)
     {
         // Macro correction + band spread now live in the pure DynamicVoicing math.
         // The engine only owns time-varying state (smoothing / stepping / preamp).
         DynamicVoicing.CorrectionVector correction =
-            DynamicVoicing.ComputeCorrection(features, outputProfile, nearWallMode, nightMode);
-        double[] dynamicGains = DynamicVoicing.SpreadToBands(correction);
+            DynamicVoicing.ComputeCorrection(features, outputProfile, nearWallMode, nightMode, loudnessComp);
+
+        double[] dynamicGains = DynamicVoicing.SpreadToBands(correction, outputProfile);
 
         double[] baseGains = ResolveBaseGains(nearWallMode, nightMode);
         double[] targetGains = new double[dynamicGains.Length];
@@ -329,7 +339,7 @@ public sealed class PresetEngine : IPresetEngine
         double smoothing = fastAttack ? FirstDynamicSmoothing : DynamicSmoothing;
         for (int i = 0; i < targetGains.Length; i++)
         {
-            double limited = ClampGain(targetGains[i], outputProfile.MaxCutDb, outputProfile.MaxBoostDb);
+            double limited = DynamicVoicing.ClampProfileBandGain(targetGains[i], DynamicBands[i].FrequencyHz, outputProfile);
             double previous = _hasDynamicEq ? _smoothedDynamicGains[i] : 0.0;
             double blended = previous + ((limited - previous) * smoothing);
             double delta = blended - previous;
@@ -339,16 +349,7 @@ public sealed class PresetEngine : IPresetEngine
             _smoothedDynamicGains[i] = Math.Abs(stepped) < MinAudibleDynamicChangeDb ? 0 : stepped;
         }
 
-        double positiveBoostBudget = _smoothedDynamicGains.Where(gain => gain > 0).Sum(gain => gain * VoicingCoefficients.PositiveBoostBudgetFactor);
-        double maxBoost = Math.Max(0, _smoothedDynamicGains.Max());
-        double preamp = nightMode
-            ? VoicingCoefficients.NightPreampDb
-            : Math.Clamp(
-                VoicingCoefficients.DayPreampBaseDb - maxBoost * VoicingCoefficients.DayPreampMaxBoostFactor - positiveBoostBudget,
-                VoicingCoefficients.DayPreampFloorDb,
-                VoicingCoefficients.DayPreampBaseDb);
-
-        string text = BuildEqualizerApoText(preamp, _smoothedDynamicGains, outputProfile);
+        string text = BuildEqualizerApoText(VoicingCoefficients.FixedPreampDb, _smoothedDynamicGains, outputProfile);
 
         return new EqPreset
         {
@@ -358,13 +359,14 @@ public sealed class PresetEngine : IPresetEngine
         };
     }
 
-    public EqPreset BuildNativeAutoEqPreset(NativeAutoEqSnapshot snapshot, OutputAudioProfile outputProfile, bool nearWallMode, bool nightMode, bool fuseWithAutoEQBase = true)
+    public EqPreset BuildNativeAutoEqPreset(NativeAutoEqSnapshot snapshot, OutputAudioProfile outputProfile, bool nearWallMode, bool nightMode, bool fuseWithAutoEQBase = true, bool loudnessComp = true)
     {
         int count = Math.Min(snapshot.EqGainsDb.Length, snapshot.BandCentersHz.Length);
         if (count == 0)
         {
-            return BuildDynamicAutoEqPreset(ToAudioFeatures(snapshot), outputProfile, nearWallMode, nightMode, fastAttack: true);
+            return BuildDynamicAutoEqPreset(ToAudioFeatures(snapshot), outputProfile, nearWallMode, nightMode, fastAttack: true, loudnessComp: loudnessComp);
         }
+
 
         double[] nativeGains = new double[count];
         for (int i = 0; i < count; i++)
@@ -377,13 +379,11 @@ public sealed class PresetEngine : IPresetEngine
             nativeGains[i] = gain;
         }
 
-        double maxBoost = nativeGains.Where(gain => gain > 0).DefaultIfEmpty(0).Max();
-        double preamp = nightMode ? -6.0 : Math.Clamp(-3.2 - maxBoost, -8.0, -3.2);
         double? truePeakDb = double.IsFinite(snapshot.TruePeakDb) ? snapshot.TruePeakDb : null;
 
         var lines = new List<string>
         {
-            $"Preamp: {FormatDb(preamp)} dB",
+            $"Preamp: {FormatDb(VoicingCoefficients.FixedPreampDb)} dB",
             $"# Native WASAPI AutoEQ: {snapshot.Device}; confidence={snapshot.Confidence:0.00}; true_peak_db={(truePeakDb?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "unknown")}",
             $"Filter: ON PK Fc 32 Hz Gain {FormatDb(outputProfile.BassSafetyCutDb)} dB Q 0.70"
         };
@@ -518,6 +518,8 @@ public sealed class PresetEngine : IPresetEngine
     private readonly record struct NativeAppliedBand(double FrequencyHz, double GainDb);
 
 }
+
+
 
 
 

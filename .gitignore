@@ -1,19 +1,29 @@
 # Build outputs
+build/
 bin/
 obj/
 dist/
 publish/
+artifacts/
 **/bin/
 **/obj/
 **/dist/
 **/publish/
 *.exe
+!native/wasapi_autoeq/wasapi_autoeq.exe
+*.msi
+*.wixpdb
+*.deb
+*.rpm
+*.tar.gz
 *.zip
 
 # Validation/build scratch folders
 _validation_bin/
 _validation_obj/
 _smooth_validation_obj/
+_ui_validation_obj/
+_volume_validation_obj/
 **/_validation_obj/
 
 # CodeGraph runtime files
@@ -39,4 +49,5 @@ TestResults/
 # OS noise
 Thumbs.db
 Desktop.ini
-.DS_Store.cleanup-report/
+.DS_Store
+.cleanup-report/

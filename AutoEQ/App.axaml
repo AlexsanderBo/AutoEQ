@@ -1,0 +1,244 @@
+<Application x:Class="AutoEQ.App"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:AutoEQ.Converters"
+             xmlns:sty="using:FluentAvalonia.Styling"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             RequestedThemeVariant="Dark">
+    <Application.Resources>
+        <SolidColorBrush x:Key="AppBackgroundBrush" Color="#120B06" />
+        <SolidColorBrush x:Key="PanelBrush" Color="#1B1109" />
+        <SolidColorBrush x:Key="BoardBrush" Color="#21150B" />
+        <SolidColorBrush x:Key="CardBrush" Color="#2A1A0E" />
+        <SolidColorBrush x:Key="CardAltBrush" Color="#352212" />
+        <SolidColorBrush x:Key="LineBrush" Color="#5B3B1F" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#D0B58B" />
+        <SolidColorBrush x:Key="FaintBrush" Color="#9C7A4E" />
+        <SolidColorBrush x:Key="GreenBrush" Color="#7FD39A" />
+        <SolidColorBrush x:Key="HotBrush" Color="#F07854" />
+        <SolidColorBrush x:Key="AmberBrush" Color="#EBC16A" />
+        <SolidColorBrush x:Key="GoldBrush" Color="#FFD98A" />
+        <SolidColorBrush x:Key="CopperBrush" Color="#A66A2A" />
+        <SolidColorBrush x:Key="BlueBrush" Color="#D9A24A" />
+        <LinearGradientBrush x:Key="GoldGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Color="#FFE3A1" Offset="0" />
+            <GradientStop Color="#D99B3D" Offset="0.52" />
+            <GradientStop Color="#7C4A19" Offset="1" />
+        </LinearGradientBrush>
+
+        <!-- Bar gradient theo dải cho card Cân bằng âm -->
+        <LinearGradientBrush x:Key="BassFillBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#8A4F1B" Offset="0" />
+            <GradientStop Color="#EBC16A" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="VocalFillBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#D99B3D" Offset="0" />
+            <GradientStop Color="#FFE3A1" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="TrebleFillBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#C58A39" Offset="0" />
+            <GradientStop Color="#FFF3D6" Offset="1" />
+        </LinearGradientBrush>
+        <!-- Bar lưỡng cực cho card Điều chỉnh AutoEQ -->
+        <LinearGradientBrush x:Key="BoostFillBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#C9A24A" Offset="0" />
+            <GradientStop Color="#7FD39A" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="CutFillBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#EBC16A" Offset="0" />
+            <GradientStop Color="#F07854" Offset="1" />
+        </LinearGradientBrush>
+
+        <conv:BoolToBrushConverter x:Key="BoolToBrushConverter" />
+        <conv:BoolToPlayPauseConverter x:Key="BoolToPlayPauseConverter" />
+        <conv:DbTextConverter x:Key="DbTextConverter" />
+        <conv:DbFaderConverter x:Key="DbFaderConverter" />
+        <conv:InverseBooleanToVisibilityConverter x:Key="InverseBooleanConverter" />
+        <conv:PercentToAngleConverter x:Key="PercentToAngleConverter" />
+        <conv:PercentToRatioConverter x:Key="PercentToRatioConverter" />
+    </Application.Resources>
+
+    <Application.Styles>
+        <sty:FluentAvaloniaTheme PreferSystemTheme="False" />
+
+        <Style Selector="Window">
+            <Setter Property="FontFamily" Value="avares://Avalonia.Fonts.Inter/Assets#Inter, Segoe UI, sans-serif" />
+            <Setter Property="Background" Value="{StaticResource AppBackgroundBrush}" />
+        </Style>
+
+        <!-- TextBlock không gán class lấy mặc định màu sáng, tránh chữ tối trên nền nâu. -->
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="#F1E2C6" />
+        </Style>
+
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{StaticResource CardBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
+                    <BrushTransition Property="Background" Duration="0:0:0.18" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.card:pointerover">
+            <Setter Property="BorderBrush" Value="{StaticResource CopperBrush}" />
+            <Setter Property="Background" Value="{StaticResource CardAltBrush}" />
+        </Style>
+
+        <Style Selector="Border.board">
+            <Setter Property="Background" Value="{StaticResource BoardBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="12" />
+        </Style>
+
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
+
+        <Style Selector="Border.metric">
+            <Setter Property="Background" Value="{StaticResource CardAltBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12" />
+        </Style>
+
+        <Style Selector="TextBlock.title">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#FFF3D6" />
+        </Style>
+
+        <Style Selector="TextBlock.heading">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#FFE7AF" />
+        </Style>
+
+        <Style Selector="TextBlock.caption">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+        </Style>
+
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="Consolas, Cascadia Mono, monospace" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+        </Style>
+
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="{StaticResource AmberBrush}" />
+            <Setter Property="Foreground" Value="#151515" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <!-- Nút chọn ngôn ngữ VI/EN: nhỏ gọn, cái đang chọn nổi bật vàng. -->
+        <Style Selector="Button.lang">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource FaintBrush}" />
+        </Style>
+        <Style Selector="Button.lang.langOn /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource GoldGradientBrush}" />
+            <Setter Property="Foreground" Value="#170E08" />
+        </Style>
+        <Style Selector="Button.lang:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="{StaticResource GoldBrush}" />
+        </Style>
+        <Style Selector="Button.lang.langOn:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#170E08" />
+        </Style>
+
+        <!-- Nút điều khiển media: tròn, tông nâu trầm đồng bộ giao diện, sáng dần khi hover/nhấn. -->
+        <Style Selector="Button.media">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="20" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="{StaticResource CardAltBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.media:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#3A2412" />
+            <Setter Property="Foreground" Value="{StaticResource GoldBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AmberBrush}" />
+        </Style>
+        <Style Selector="Button.media:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource LineBrush}" />
+            <Setter Property="Foreground" Value="#FFF3D6" />
+        </Style>
+
+        <!-- Nút play/pause to và nổi bật hơn 2 nút bên cạnh, dùng gradient vàng chủ đạo. -->
+        <Style Selector="Button.mediaPrimary">
+            <Setter Property="Width" Value="48" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="CornerRadius" Value="24" />
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="Background" Value="{StaticResource GoldGradientBrush}" />
+            <Setter Property="Foreground" Value="#170E08" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.mediaPrimary:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource GoldBrush}" />
+            <Setter Property="Foreground" Value="#170E08" />
+        </Style>
+        <Style Selector="Button.mediaPrimary:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AmberBrush}" />
+            <Setter Property="Foreground" Value="#170E08" />
+        </Style>
+        <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource GoldBrush}" />
+            <Setter Property="Foreground" Value="#151515" />
+        </Style>
+
+        <!-- Smooth, consistent feedback for every button: subtle lift on hover, press dip. -->
+        <Style Selector="Button">
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="RenderTransform" Value="none" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button:pointerover">
+            <Setter Property="RenderTransform" Value="translateY(-1px)" />
+        </Style>
+        <Style Selector="Button:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.97)" />
+        </Style>
+
+        <!-- Animate live meter fills so values glide instead of snapping each analysis tick. -->
+        <Style Selector="ProgressBar">
+            <Setter Property="Foreground" Value="{StaticResource AmberBrush}" />
+        </Style>
+        <Style Selector="ProgressBar /template/ Border#PART_Indicator">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Width" Duration="0:0:0.35" Easing="CubicEaseOut" />
+                </Transitions>
+            </Setter>
+        </Style>
+    </Application.Styles>
+</Application>
