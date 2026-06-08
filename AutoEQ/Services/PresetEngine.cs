@@ -96,25 +96,25 @@ public sealed class PresetEngine : IPresetEngine
 
     public string ChooseStartupPreset(AudioOutputInfo outputInfo, bool nearWallMode, bool nightMode)
     {
-        if (nightMode) return "Late Night Smooth";
+        if (nightMode) return "Midnight";
 
         string deviceText = $"{outputInfo.DefaultDeviceName} {outputInfo.OutputSummary}";
         if (ContainsAny(deviceText, "AutoEQ", "marshall"))
         {
-            return nearWallMode ? "Room Tamed Speaker" : "Universal Warm Balance";
+            return nearWallMode ? "Corner" : PresetCatalog.Fallback;
         }
 
         if (ContainsAny(deviceText, "headphone", "headset", "earbuds", "earphone", "tai nghe"))
         {
-            return "Pure Device Pass";
+            return "Flat";
         }
 
         if (ContainsAny(deviceText, "bluetooth", "speaker", "loa"))
         {
-            return nearWallMode ? "Room Tamed Speaker" : "Universal Warm Balance";
+            return nearWallMode ? "Corner" : PresetCatalog.Fallback;
         }
 
-        return "Universal Warm Balance";
+        return PresetCatalog.Fallback;
     }
 
     public PresetDecision EvaluatePresetDecision(
@@ -205,7 +205,7 @@ public sealed class PresetEngine : IPresetEngine
             {
                 Reason = "DSP confidence too low, keeping current curve.",
                 StableState = stableState,
-                TargetPresetName = "AutoEQ Live - AutoEQ Optimized"
+                TargetPresetName = "Reference"
             };
         }
 
@@ -216,7 +216,7 @@ public sealed class PresetEngine : IPresetEngine
             {
                 Reason = "Dynamic EQ cooldown active, keeping current curve.",
                 StableState = stableState,
-                TargetPresetName = "AutoEQ Live - AutoEQ Optimized"
+                TargetPresetName = "Reference"
             };
         }
 
@@ -275,16 +275,16 @@ public sealed class PresetEngine : IPresetEngine
 
     private static string ChoosePresetName(string stableState, bool nearWallMode, bool nightMode)
     {
-        if (nightMode) return "Late Night Smooth";
-        if (nearWallMode && IsState(stableState, "Balanced", "Quiet")) return "Room Tamed Speaker";
+        if (nightMode) return "Midnight";
+        if (nearWallMode && IsState(stableState, "Balanced", "Quiet")) return "Corner";
 
         return stableState switch
         {
-            "Boomy" => "Bass Control",
-            "Vocal Recessed" => "Vocal Focus",
-            "Harsh Treble" => "Treble Softener",
-            "Quiet" => "Universal Warm Balance",
-            _ => "Universal Warm Balance"
+            "Boomy" => "Tight",
+            "Vocal Recessed" => "Podcast",
+            "Harsh Treble" => "Silk",
+            "Quiet" => PresetCatalog.Fallback,
+            _ => PresetCatalog.Fallback
         };
     }
 

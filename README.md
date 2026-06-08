@@ -47,13 +47,14 @@ Then select **AutoEQ Sink** in Ubuntu sound settings.
 
 | Preset | Sound |
 |--------|-------|
-| AutoEQ 3 — Clean Warm | Balanced warmth |
-| AutoEQ 3 — Near Wall | Bass cut for desk placement |
-| Less Boom | Tighter bass |
-| Clear Vocal | Forward mids |
-| Soft Treble | Reduced treble fatigue |
-| Night Mode | Low-volume loudness |
-| Bypass | Flat / no EQ |
+| Reference | AutoEQ optimized |
+| Cozy | Balanced warmth |
+| Corner | Bass cut for desk placement |
+| Tight | Tighter bass |
+| Podcast | Forward mids |
+| Silk | Reduced treble fatigue |
+| Midnight | Low-volume smoothness |
+| Flat | No EQ |
 
 ---
 

@@ -13,9 +13,9 @@ public sealed class PresetEngineTests
         var engine = new PresetEngine();
         var names = engine.GetPresetNames();
 
-        Assert.Contains("Universal Warm Balance", names);
-        Assert.Contains("Late Night Smooth", names);
-        Assert.Contains("Pure Device Pass", names);
+        Assert.Contains("Cozy", names);
+        Assert.Contains("Midnight", names);
+        Assert.Contains("Flat", names);
 
         // Unknown name resolves to the fallback rather than throwing.
         var fallback = engine.GetPreset("does-not-exist");
@@ -26,7 +26,7 @@ public sealed class PresetEngineTests
     public void GetPreset_IsCaseInsensitive()
     {
         var engine = new PresetEngine();
-        Assert.Equal("Bass Control", engine.GetPreset("bass control").Name);
+        Assert.Equal("Tight", engine.GetPreset("tight").Name);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public sealed class PresetEngineTests
         var engine = new PresetEngine();
         var info = new AudioOutputInfo { DefaultDeviceName = "Headphones" };
 
-        Assert.Equal("Late Night Smooth", engine.ChooseStartupPreset(info, nearWallMode: false, nightMode: true));
+        Assert.Equal("Midnight", engine.ChooseStartupPreset(info, nearWallMode: false, nightMode: true));
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class PresetEngineTests
         var engine = new PresetEngine();
         var info = new AudioOutputInfo { DefaultDeviceName = "USB Headset", ActiveOutputNames = ["headphone"] };
 
-        Assert.Equal("Pure Device Pass", engine.ChooseStartupPreset(info, nearWallMode: false, nightMode: false));
+        Assert.Equal("Flat", engine.ChooseStartupPreset(info, nearWallMode: false, nightMode: false));
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public sealed class PresetEngineTests
         var engine = new PresetEngine();
         var info = new AudioOutputInfo { DefaultDeviceName = "Bluetooth Speaker", ActiveOutputNames = ["speaker"] };
 
-        Assert.Equal("Room Tamed Speaker", engine.ChooseStartupPreset(info, nearWallMode: true, nightMode: false));
+        Assert.Equal("Corner", engine.ChooseStartupPreset(info, nearWallMode: true, nightMode: false));
     }
 
     [Fact]

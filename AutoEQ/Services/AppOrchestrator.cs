@@ -207,7 +207,8 @@ public sealed class AppOrchestrator : IDisposable, IAsyncDisposable
         // Re-sync volume và re-register callback trên device mới (GetMasterVolumePercent → GetRenderDevice → swap endpoint).
         _vm.SetVolumeFromSystem(_volume.GetMasterVolumePercent(), _volume.GetMute());
 
-        if (!_vm.AutoEqEnabled && !string.IsNullOrWhiteSpace(_vm.CurrentPresetName))
+        if (!_vm.AutoEqEnabled && !string.IsNullOrWhiteSpace(_vm.CurrentPresetName)
+            && _presetEngine.GetPresetNames().Contains(_vm.CurrentPresetName, StringComparer.OrdinalIgnoreCase))
         {
             await ApplyPresetByNameAsync(_vm.CurrentPresetName, "output device changed").ConfigureAwait(false);
         }

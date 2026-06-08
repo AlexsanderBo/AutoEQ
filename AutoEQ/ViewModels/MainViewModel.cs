@@ -47,7 +47,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private DateTime _lastSignalLogUtc = DateTime.MinValue;
 
     private bool _autoEqEnabled = true;
-    private string _currentPresetName = "Universal Warm Balance";
+    private string _currentPresetName = PresetCatalog.Fallback;
     private string _analysisState = "cân bằng";
     private double _confidence;
     private double _rms;
