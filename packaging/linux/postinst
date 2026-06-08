@@ -3,15 +3,64 @@ set -e
 
 chmod 755 /usr/bin/autoeq-linux
 
+# Detect the real user who ran sudo
+REAL_USER="${SUDO_USER:-}"
+if [ -z "$REAL_USER" ]; then
+  REAL_USER="$(logname 2>/dev/null || true)"
+fi
+
+# Only offer interactive options when we know the user and have a TTY
+if [ -n "$REAL_USER" ] && [ "$REAL_USER" != "root" ] && [ -t 0 ]; then
+  REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
+
+  echo ""
+  echo "=== AutoEQ Linux setup ==="
+  echo ""
+
+  # Desktop shortcut
+  printf "Create a Desktop shortcut? [Y/n] "
+  read -r DESK_ANSWER
+  case "$DESK_ANSWER" in
+    [nN]*)
+      ;;
+    *)
+      DESKTOP_DIR="$REAL_HOME/Desktop"
+      mkdir -p "$DESKTOP_DIR"
+      cp /usr/share/applications/autoeq-linux.desktop "$DESKTOP_DIR/autoeq-linux.desktop"
+      chmod 755 "$DESKTOP_DIR/autoeq-linux.desktop"
+      chown "$REAL_USER:" "$DESKTOP_DIR/autoeq-linux.desktop"
+      echo "  Desktop shortcut created."
+      ;;
+  esac
+
+  # Autostart
+  printf "Start AutoEQ automatically when you log in? [Y/n] "
+  read -r AUTO_ANSWER
+  case "$AUTO_ANSWER" in
+    [nN]*)
+      ;;
+    *)
+      AUTOSTART_DIR="$REAL_HOME/.config/autostart"
+      mkdir -p "$AUTOSTART_DIR"
+      cp /usr/share/applications/autoeq-linux.desktop "$AUTOSTART_DIR/autoeq-linux.desktop"
+      chown -R "$REAL_USER:" "$AUTOSTART_DIR"
+      echo "  AutoEQ will start with your session."
+      ;;
+  esac
+
+  echo ""
+fi
+
 cat <<'EOF'
 AutoEQ Linux installed.
 
-Open "AutoEQ Linux" from the app launcher, or run:
-  autoeq-linux --background
+To finish setup, run:
+  autoeq-linux --install-pipewire --install-startup --setup-only
+  systemctl --user restart pipewire pipewire-pulse
 
-On first run it creates the user PipeWire config and requests "AutoEQ Sink"
-as the default output. If your desktop keeps the old output selected, open
-Ubuntu sound settings and select "AutoEQ Sink" once.
+Then open Ubuntu sound settings and select "AutoEQ Sink".
+
+Or launch "AutoEQ Linux" from the app menu.
 EOF
 
 exit 0
