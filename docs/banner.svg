@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 200" width="900" height="200">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e2d4a"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="barA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.3"/>
+    </linearGradient>
+    <linearGradient id="barB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.3"/>
+    </linearGradient>
+    <linearGradient id="barC" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#bfdbfe"/>
+      <stop offset="100%" stop-color="#93c5fd" stop-opacity="0.3"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="200" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid lines -->
+  <line x1="0" y1="50"  x2="900" y2="50"  stroke="#1e40af" stroke-width="0.4" opacity="0.2"/>
+  <line x1="0" y1="100" x2="900" y2="100" stroke="#1e40af" stroke-width="0.4" opacity="0.2"/>
+  <line x1="0" y1="150" x2="900" y2="150" stroke="#1e40af" stroke-width="0.4" opacity="0.2"/>
+
+  <!-- EQ bars left decorative cluster -->
+  <rect x="20"  y="110" width="14" height="60" rx="3" fill="url(#barA)" opacity="0.5"/>
+  <rect x="40"  y="90"  width="14" height="80" rx="3" fill="url(#barA)" opacity="0.5"/>
+  <rect x="60"  y="70"  width="14" height="100" rx="3" fill="url(#barB)" opacity="0.5"/>
+  <rect x="80"  y="80"  width="14" height="90"  rx="3" fill="url(#barB)" opacity="0.5"/>
+  <rect x="100" y="60"  width="14" height="110" rx="3" fill="url(#barC)" opacity="0.5"/>
+  <rect x="120" y="90"  width="14" height="80"  rx="3" fill="url(#barA)" opacity="0.5"/>
+  <rect x="140" y="120" width="14" height="50"  rx="3" fill="url(#barA)" opacity="0.5"/>
+
+  <!-- EQ curve left -->
+  <polyline
+    points="27,108 47,88 67,68 87,78 107,58 127,88 147,118"
+    fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    opacity="0.8" filter="url(#glow)"/>
+
+  <!-- EQ bars right decorative cluster -->
+  <rect x="746" y="120" width="14" height="50"  rx="3" fill="url(#barA)" opacity="0.5"/>
+  <rect x="766" y="90"  width="14" height="80"  rx="3" fill="url(#barA)" opacity="0.5"/>
+  <rect x="786" y="60"  width="14" height="110" rx="3" fill="url(#barC)" opacity="0.5"/>
+  <rect x="806" y="80"  width="14" height="90"  rx="3" fill="url(#barB)" opacity="0.5"/>
+  <rect x="826" y="70"  width="14" height="100" rx="3" fill="url(#barB)" opacity="0.5"/>
+  <rect x="846" y="90"  width="14" height="80"  rx="3" fill="url(#barA)" opacity="0.5"/>
+  <rect x="866" y="110" width="14" height="60"  rx="3" fill="url(#barA)" opacity="0.5"/>
+
+  <!-- EQ curve right -->
+  <polyline
+    points="753,118 773,88 793,58 813,78 833,68 853,88 873,108"
+    fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    opacity="0.8" filter="url(#glow)"/>
+
+  <!-- Center logo icon -->
+  <rect x="395" y="30" width="50" height="50" rx="10" fill="#1e3a5f"/>
+  <rect x="400" y="60" width="6"  height="16" rx="2" fill="url(#barA)"/>
+  <rect x="410" y="52" width="6"  height="24" rx="2" fill="url(#barB)"/>
+  <rect x="420" y="45" width="6"  height="31" rx="2" fill="url(#barC)"/>
+  <rect x="430" y="48" width="6"  height="28" rx="2" fill="url(#barB)"/>
+  <rect x="440" y="58" width="6"  height="18" rx="2" fill="url(#barA)"/>
+
+  <!-- Main title -->
+  <text x="450" y="118" font-family="ui-monospace, 'SF Mono', 'Cascadia Code', monospace"
+        font-size="52" font-weight="800" fill="#f0f9ff" text-anchor="middle"
+        letter-spacing="4" filter="url(#glow)">AutoEQ</text>
+
+  <!-- Tagline -->
+  <text x="450" y="148" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        font-size="15" fill="#93c5fd" text-anchor="middle" letter-spacing="1" opacity="0.9">
+    Real-time system-wide equalizer · Local · Private · Warm
+  </text>
+
+  <!-- Bottom accent line -->
+  <line x1="200" y1="170" x2="700" y2="170" stroke="#3b82f6" stroke-width="1" opacity="0.4"/>
+</svg>
