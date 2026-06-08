@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e3a5f"/>
+    </linearGradient>
+    <linearGradient id="bar1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="bar2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="bar3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#bfdbfe"/>
+      <stop offset="100%" stop-color="#93c5fd" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="120" height="120" rx="20" fill="url(#bg)"/>
+
+  <!-- Subtle grid lines -->
+  <line x1="10" y1="88" x2="110" y2="88" stroke="#1e40af" stroke-width="0.5" opacity="0.4"/>
+  <line x1="10" y1="70" x2="110" y2="70" stroke="#1e40af" stroke-width="0.5" opacity="0.3"/>
+  <line x1="10" y1="52" x2="110" y2="52" stroke="#1e40af" stroke-width="0.5" opacity="0.2"/>
+
+  <!-- EQ bars (warm, vocal-forward curve: mid boost, soft treble) -->
+  <!-- x positions: 13, 27, 41, 55, 69, 83, 97  width=10 each  bottom=88 -->
+  <rect x="13" y="62" width="10" height="26" rx="3" fill="url(#bar1)"/>
+  <rect x="27" y="52" width="10" height="36" rx="3" fill="url(#bar1)"/>
+  <rect x="41" y="40" width="10" height="48" rx="3" fill="url(#bar2)"/>
+  <rect x="55" y="43" width="10" height="45" rx="3" fill="url(#bar3)"/>
+  <rect x="69" y="36" width="10" height="52" rx="3" fill="url(#bar3)"/>
+  <rect x="83" y="55" width="10" height="33" rx="3" fill="url(#bar2)"/>
+  <rect x="97" y="70" width="10" height="18" rx="3" fill="url(#bar1)"/>
+
+  <!-- EQ curve line over bars -->
+  <polyline
+    points="18,60 32,50 46,38 60,41 74,34 88,53 102,68"
+    fill="none"
+    stroke="#93c5fd"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.7"
+  />
+
+  <!-- Dot at peak -->
+  <circle cx="74" cy="34" r="2.5" fill="#bfdbfe"/>
+
+  <!-- Bottom label -->
+  <text x="60" y="110" font-family="ui-monospace, monospace" font-size="10" font-weight="700"
+        fill="#93c5fd" text-anchor="middle" letter-spacing="3" opacity="0.9">AutoEQ</text>
+</svg>
